@@ -24,9 +24,7 @@
  [
   {description, "leo_watchdog keep monitoring applications"},
   {vsn, "1"},
-  {modules, [
-             leo_watchdog
-            ]},
+  {mod, {leo_watchdog_app, []}},
   {registered, []},
   {applications, [
                   kernel,
