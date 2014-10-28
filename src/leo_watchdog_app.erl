@@ -39,6 +39,8 @@
 %%----------------------------------------------------------------------
 start(_Type, _Args) ->
     consider_profiling(),
+    application:start(sasl),
+    application:start(os_mon),
     leo_watchdog_sup:start_link().
 
 prep_stop(_State) ->

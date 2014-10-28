@@ -33,7 +33,8 @@
 
 %% External API
 -export([start_link/0,
-         start_child/3
+         start_child/3,
+         start_child/4
         ]).
 
 %% Callbacks
@@ -54,18 +55,38 @@ start_link() ->
 %%-----------------------------------------------------------------------
 %% @doc Creates the gen_server process as part of a supervision tree
 %% @end
--spec(start_child(rex, MaxMemCapacity, CheckInterval) ->
-             ok | no_return() when MaxMemCapacity::pos_integer(),
+-spec(start_child(rex, PropertyVal, CheckInterval) ->
+             ok | no_return() when PropertyVal::any(),
                                    CheckInterval::pos_integer()).
-start_child(rex, MaxMemCapacity, CheckInterval) ->
+start_child(rex, PropertyVal, CheckInterval) ->
     ChildSpec = {leo_watchdog_rex,
                  {leo_watchdog_rex, start_link,
-                  [MaxMemCapacity, CheckInterval]},
+                  [PropertyVal, CheckInterval]},
                  permanent,
                  2000,
                  worker,
                  [leo_watchdog_rex]},
+    case supervisor:start_child(?MODULE, ChildSpec) of
+        {ok, _Pid} ->
+            ok;
+        Cause ->
+            {error, Cause}
+    end.
 
+-spec(start_child(cpu, PropertyVal_1, PropertyVal_2, CheckInterval) ->
+             ok | no_return() when PropertyVal_1::any(),
+                                   PropertyVal_2::any(),
+                                   CheckInterval::pos_integer()).
+start_child(cpu, PropertyVal_1, PropertyVal_2, CheckInterval) ->
+    ChildSpec = {leo_watchdog_cpu,
+                 {leo_watchdog_cpu, start_link,
+                  [PropertyVal_1,
+                   PropertyVal_2,
+                   CheckInterval]},
+                 permanent,
+                 2000,
+                 worker,
+                 [leo_watchdog_cpu]},
     case supervisor:start_child(?MODULE, ChildSpec) of
         {ok, _Pid} ->
             ok;
