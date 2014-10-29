@@ -32,7 +32,7 @@
 -include_lib("eunit/include/eunit.hrl").
 
 %% API
--export([start_link/3,
+-export([start_link/4,
          stop/0]).
 
 %% Callback
@@ -44,22 +44,28 @@
 -define(DEF_LOAD_AVG, 90.0).
 -define(DEF_CPU_UTIL, 90.0).
 
+-record(state, {
+          max_load_avg = 0.0 :: float(),
+          max_cpu_util = 0.0 :: float(),
+          callback_mod       :: module()
+         }).
 
 %%--------------------------------------------------------------------
 %% API
 %%--------------------------------------------------------------------
 %% @doc Start the server
--spec(start_link(MaxLoadAvg, MaxCPUUtil,IntervalTime) ->
+-spec(start_link(MaxLoadAvg, MaxCPUUtil, CallbackMod, Interval) ->
              {ok,Pid} | ignore | {error,Error} when MaxLoadAvg::float(),
                                                     MaxCPUUtil::float(),
-                                                    IntervalTime::pos_integer(),
+                                                    CallbackMod::function(),
+                                                    Interval::pos_integer(),
                                                     Pid::pid(),
                                                     Error::{already_started,Pid} | term()).
-start_link(MaxLoadAvg, MaxCPUUtil, IntervalTime) ->
-    leo_watchdog:start_link(?MODULE, ?MODULE,
-                            [{?PROP_MAX_LOAD_AVG, MaxLoadAvg},
-                             {?PROP_MAX_CPU_UTIL, MaxCPUUtil}],
-                            IntervalTime).
+start_link(MaxLoadAvg, MaxCPUUtil, CallbackMod, Interval) ->
+    State = #state{max_load_avg  = MaxLoadAvg,
+                   max_cpu_util  = MaxCPUUtil,
+                   callback_mod  = CallbackMod},
+    leo_watchdog:start_link(?MODULE, ?MODULE, State, Interval).
 
 
 %% @doc Stop the server
@@ -75,32 +81,35 @@ stop() ->
 %% @dog Call execution of the watchdog
 -spec(handle_call(Id, State) ->
              ok | {error,Error} when Id::atom(),
-                                     State::[{atom(), any()}],
+                                     State::#state{},
                                      Error::any()).
-handle_call(_Id, State) ->
-    LoadAvg = leo_misc:get_value(?PROP_MAX_LOAD_AVG,
-                                 State, ?DEF_LOAD_AVG),
-    CpuUtil = leo_misc:get_value(?PROP_MAX_CPU_UTIL,
-                                 State, ?DEF_CPU_UTIL),
+handle_call(Id, #state{max_load_avg = MaxLoadAvg,
+                       max_cpu_util = MaxCpuUtil,
+                       callback_mod = CallbackMod} = State) ->
     try
         AVG_1    = erlang:round(cpu_sup:avg1() / 256 * 1000) / 10,
         AVG_5    = erlang:round(cpu_sup:avg5() / 256 * 1000) / 10,
         CPU_Util = erlang:round(cpu_sup:util() * 10) / 10,
 
-        case (LoadAvg < AVG_1 orelse
-              LoadAvg < AVG_5) of
-            true when CPU_Util > CpuUtil ->
+        case (MaxLoadAvg < AVG_1 orelse
+              MaxLoadAvg < AVG_5) of
+            true when CPU_Util > MaxCpuUtil ->
+                %% Nofify the message to the clients
+                CurState = [{load_avg_1, AVG_1},
+                            {load_avg_5, AVG_5},
+                            {cpu_util,   CPU_Util}
+                           ],
                 error_logger:warning_msg(
                   "~p,~p,~p,~p~n",
                   [{module, ?MODULE_STRING},
                    {function, "handle_call/2"},
-                   {line, ?LINE}, {body, [{load_avg_1, AVG_1},
-                                          {load_avg_5, AVG_5},
-                                          {cpu_util,   CPU_Util}
-                                         ]}]),
-                %% Nofify the message to the clients
-                ?debugVal({'over_threshold', AVG_1, AVG_5, CPU_Util}),
-                ok;
+                   {line, ?LINE}, {body, CurState}]),
+                case CallbackMod of
+                    undefined ->
+                        ok;
+                    _ ->
+                        erlang:apply(CallbackMod, notify, [Id, CurState])
+                end;
             true ->
                 error_logger:info_msg(
                   "~p,~p,~p,~p~n",
