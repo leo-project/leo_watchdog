@@ -97,5 +97,4 @@ handle_call(_Id, State) ->
                                      Cause::any(),
                                      Error::any()).
 handle_fail(_Id,_Cause) ->
-    %% @TODO
     ok.

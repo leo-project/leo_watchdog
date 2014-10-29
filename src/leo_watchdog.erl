@@ -103,7 +103,6 @@ handle_info(timeout, State=#state{id = Id,
                                   properties = Props,
                                   interval = Interval
                                  } = State) ->
-    ?debugVal({Id, CallbackMod, Props}),
     Props_1 = case catch erlang:apply(
                            CallbackMod, handle_call, [Id, Props]) of
                   {'EXIT', Cause} ->

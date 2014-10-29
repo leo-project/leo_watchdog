@@ -18,7 +18,7 @@
 %% specific language governing permissions and limitations
 %% under the License.
 %%
-%% @doc leo_watchdog for 'rex' process
+%% @doc Watchdog for CPU load avg and utilization
 %% @reference
 %% @end
 %%======================================================================
@@ -90,15 +90,32 @@ handle_call(_Id, State) ->
         case (LoadAvg < AVG_1 orelse
               LoadAvg < AVG_5) of
             true when CPU_Util > CpuUtil ->
-                %% @TODO
-                ?debugVal({AVG_1, AVG_5, CPU_Util}),
+                error_logger:warning_msg(
+                  "~p,~p,~p,~p~n",
+                  [{module, ?MODULE_STRING},
+                   {function, "handle_call/2"},
+                   {line, ?LINE}, {body, [{load_avg_1, AVG_1},
+                                          {load_avg_5, AVG_5},
+                                          {cpu_util,   CPU_Util}
+                                         ]}]),
+                %% Nofify the message to the clients
+                ?debugVal({'over_threshold', AVG_1, AVG_5, CPU_Util}),
                 ok;
-            _ ->
-                void
+            true ->
+                error_logger:info_msg(
+                  "~p,~p,~p,~p~n",
+                  [{module, ?MODULE_STRING},
+                   {function, "handle_call/2"},
+                   {line, ?LINE}, {body, [{load_avg_1, AVG_1},
+                                          {load_avg_5, AVG_5},
+                                          {cpu_util,   CPU_Util}
+                                         ]}]);
+            false ->
+                ok
         end
     catch
         _:_ ->
-            void
+            ok
     end,
     {ok, State}.
 
@@ -108,5 +125,4 @@ handle_call(_Id, State) ->
                                      Cause::any(),
                                      Error::any()).
 handle_fail(_Id,_Cause) ->
-    %% @TODO
     ok.
