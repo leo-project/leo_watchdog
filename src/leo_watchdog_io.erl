@@ -39,13 +39,6 @@
 -export([handle_call/2,
          handle_fail/2]).
 
--define(PROP_MAX_INPUT_FOR_INTERVAL,  'max_input').
--define(PROP_MAX_OUTPUT_FOR_INTERVAL, 'max_output').
--define(DEF_INPUT,  134217728). %% 128MB
--define(DEF_OUTPUT, 134217728). %% 128MB
--define(VAL_INPUT_FOR_INTERVAL,  'val_input').
--define(VAL_OUTPUT_FOR_INTERVAL, 'val_output').
-
 -record(state, {
           max_input  = 0  :: pos_integer(),
           max_output = 0  :: pos_integer(),
@@ -59,13 +52,16 @@
 %% API
 %%--------------------------------------------------------------------
 %% @doc Start the server
--spec(start_link(MaxInputForInterval, MaxOutputForInterval, CallbackMod, Interval) ->
-             {ok,Pid} | ignore | {error,Error} when MaxInputForInterval::non_neg_integer(),
-                                                    MaxOutputForInterval::non_neg_integer(),
-                                                    CallbackMod::module(),
-                                                    Interval::pos_integer(),
-                                                    Pid::pid(),
-                                                    Error::{already_started,Pid} | term()).
+-spec(start_link(MaxInputForInterval, MaxOutputForInterval,
+                 CallbackMod, Interval) ->
+             {ok,Pid} |
+             ignore |
+             {error,Error} when MaxInputForInterval::non_neg_integer(),
+                                MaxOutputForInterval::non_neg_integer(),
+                                CallbackMod::module(),
+                                Interval::pos_integer(),
+                                Pid::pid(),
+                                Error::{already_started,Pid} | term()).
 start_link(MaxInputForInterval, MaxOutputForInterval, CallbackMod, Interval) ->
     State = #state{max_input    = MaxInputForInterval,
                    max_output   = MaxOutputForInterval,
@@ -100,7 +96,6 @@ handle_call(Id, #state{max_input    = MaxInput,
     CurOutput = leo_misc:get_value('output', RetL, 0),
     DiffInput  = CurInput  - PrevInput,
     DiffOutput = CurOutput - PrevOutput,
-    ?debugVal({DiffInput, DiffOutput}),
 
     case (DiffInput  > MaxInput orelse
           DiffOutput > MaxOutput) of

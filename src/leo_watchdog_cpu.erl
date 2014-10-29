@@ -39,11 +39,6 @@
 -export([handle_call/2,
          handle_fail/2]).
 
--define(PROP_MAX_LOAD_AVG, 'max_load_avg').
--define(PROP_MAX_CPU_UTIL, 'max_cpu_util').
--define(DEF_LOAD_AVG, 90.0).
--define(DEF_CPU_UTIL, 90.0).
-
 -record(state, {
           max_load_avg = 0.0 :: float(),
           max_cpu_util = 0.0 :: float(),
@@ -55,12 +50,14 @@
 %%--------------------------------------------------------------------
 %% @doc Start the server
 -spec(start_link(MaxLoadAvg, MaxCPUUtil, CallbackMod, Interval) ->
-             {ok,Pid} | ignore | {error,Error} when MaxLoadAvg::float(),
-                                                    MaxCPUUtil::float(),
-                                                    CallbackMod::function(),
-                                                    Interval::pos_integer(),
-                                                    Pid::pid(),
-                                                    Error::{already_started,Pid} | term()).
+             {ok,Pid} |
+             ignore |
+             {error,Error} when MaxLoadAvg::float(),
+                                MaxCPUUtil::float(),
+                                CallbackMod::function(),
+                                Interval::pos_integer(),
+                                Pid::pid(),
+                                Error::{already_started,Pid} | term()).
 start_link(MaxLoadAvg, MaxCPUUtil, CallbackMod, Interval) ->
     State = #state{max_load_avg  = MaxLoadAvg,
                    max_cpu_util  = MaxCPUUtil,
