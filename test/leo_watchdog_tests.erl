@@ -65,7 +65,7 @@ suite_test_() ->
      end,
      [
       {"test watchdog",
-       {timeout, 1000, fun suite/0}}
+       {timeout, 30000, fun suite/0}}
      ]}.
 
 
@@ -79,6 +79,9 @@ suite() ->
     State_CPU = leo_watchdog_state:get('leo_watchdog_cpu'),
     State_IO  = leo_watchdog_state:get('leo_watchdog_io'),
     ?debugVal({State_CPU, State_IO}),
+
+    NotSafeItems_1 = leo_watchdog_state:find_not_safe_items(),
+    ?debugVal(NotSafeItems_1),
     ok.
 
 %% @private
@@ -93,6 +96,7 @@ loop(Index) ->
     end.
 
 send_message(0,_Pid) ->
+    timer:sleep(timer:seconds(10)),
     ok;
 send_message(NumOfMsgs, Pid) ->
     case (NumOfMsgs rem 100000) of
@@ -100,6 +104,9 @@ send_message(NumOfMsgs, Pid) ->
             State_CPU = leo_watchdog_state:get('leo_watchdog_cpu'),
             State_IO  = leo_watchdog_state:get('leo_watchdog_io'),
             ?debugVal({State_CPU, State_IO}),
+
+            NotSafeItems = leo_watchdog_state:find_not_safe_items(),
+            ?debugVal(NotSafeItems),
             timer:sleep(10);
         _ ->
             void

@@ -35,7 +35,8 @@
 -export([start_link/0,
          stop/0]).
 -export([get/1,
-         put/2
+         put/2,
+         find_not_safe_items/0
         ]).
 
 %% gen_server callbacks
@@ -64,19 +65,27 @@ stop() ->
     gen_server:call(?MODULE, stop).
 
 
-%% @doc Stop the server
+%% @doc Retrieve the current status by id
 -spec(get(WatchdogId) ->
              ok when WatchdogId::atom()).
 get(WatchdogId) ->
     gen_server:call(?MODULE, {get, WatchdogId}, ?DEF_TIMEOUT).
 
 
-%% @doc Stop the server
+%% @doc Put the current status
 -spec(put(WatchdogId, CurState) ->
              ok when WatchdogId::atom(),
                      CurState::#watchdog_state{}).
 put(WatchdogId, CurState) ->
     gen_server:call(?MODULE, {put, WatchdogId, CurState}, ?DEF_TIMEOUT).
+
+
+%% @doc Retrieve the states of not safe
+-spec(find_not_safe_items() ->
+             {ok, Items} |
+             not_found when Items::[{atom(), #watchdog_state{}}]).
+find_not_safe_items() ->
+    gen_server:call(?MODULE, find_not_safe_items, ?DEF_TIMEOUT).
 
 
 %%--------------------------------------------------------------------
@@ -104,7 +113,20 @@ handle_call({put, WatchdogId, CurState}, _From, #state{items = Items} = State) -
                 [{WatchdogId, CurState}|
                  lists:delete({WatchdogId, Val}, Items)]
         end,
-    {reply, ok, State#state{items = NewItems}}.
+    {reply, ok, State#state{items = NewItems}};
+
+handle_call(find_not_safe_items, _From, #state{items = []} = State) ->
+    {reply, not_found, State};
+handle_call(find_not_safe_items, _From, #state{items = Items} = State) ->
+    Ret = case [WatchdogId || {WatchdogId, #watchdog_state{
+                                     state = ?WD_STATE_ERROR}} <- Items] of
+              [] ->
+                  not_found;
+              Items_1 ->
+                  ?debugVal(Items_1),
+                  {ok, Items_1}
+          end,
+    {reply, Ret, State}.
 
 
 %% @doc Handling cast message
