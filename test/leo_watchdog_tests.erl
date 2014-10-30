@@ -28,15 +28,16 @@
 -include("leo_watchdog.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
--export([notify/2]).
+-export([notify/3]).
 
 
-notify(_, State) ->
+notify(_, Level, State) ->
     error_logger:warning_msg(
       "~p,~p,~p,~p~n",
       [{module, ?MODULE_STRING},
-       {function, "notify/2"},
-       {line, ?LINE}, {body, State}]),
+       {function, "notify/3"},
+       {line, ?LINE}, {body, [{level, Level}, {state, State}]}
+      ]),
     ok.
 
 -ifdef(EUNIT).

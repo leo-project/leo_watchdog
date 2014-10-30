@@ -119,7 +119,7 @@ handle_call(find_not_safe_items, _From, #state{items = []} = State) ->
     {reply, not_found, State};
 handle_call(find_not_safe_items, _From, #state{items = Items} = State) ->
     Ret = case [WatchdogId || {WatchdogId, #watchdog_state{
-                                     state = ?WD_STATE_ERROR}} <- Items] of
+                                     state = ?WD_LEVEL_ERROR}} <- Items] of
               [] ->
                   not_found;
               Items_1 ->

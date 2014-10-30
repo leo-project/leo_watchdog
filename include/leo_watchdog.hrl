@@ -28,16 +28,28 @@
 
 -type(watchdog_id() :: atom()).
 
--define(WD_STATE_SAFE,  'safe').
--define(WD_STATE_WARN,  'warn').
--define(WD_STATE_ERROR, 'error').
--type(watchdog_state() :: ?WD_STATE_SAFE |
-                          ?WD_STATE_WARN |
-                          ?WD_STATE_ERROR).
+-define(WD_LEVEL_SAFE,  'safe').
+-define(WD_LEVEL_WARN,  'warn').
+-define(WD_LEVEL_ERROR, 'error').
+-type(watchdog_level() :: ?WD_LEVEL_SAFE |
+                          ?WD_LEVEL_WARN |
+                          ?WD_LEVEL_ERROR).
 -record(watchdog_state, {
-          state = ?WD_STATE_SAFE :: watchdog_state(),
+          state = ?WD_LEVEL_SAFE :: watchdog_level(),
           props = [] :: [{atom(), any()}]
          }).
+
+-define(notify_msg(_Level, _State),
+        begin
+            case (Level == ?WD_LEVEL_WARN orelse
+                  Level == ?WD_LEVEL_ERROR) of
+                true when CallbackMod /= undefined->
+                    erlang:apply(CallbackMod, notify,
+                                 [Id, Level, CurState]);
+                _ ->
+                    void
+            end
+        end).
 
 %% defalut constants
 -define(DEF_MEM_CAPACITY, 33554432).

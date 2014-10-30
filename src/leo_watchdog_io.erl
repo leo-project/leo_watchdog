@@ -106,21 +106,20 @@ handle_call(Id, #state{max_input    = MaxInput,
                 {diff_output, DiffOutput}
                ],
     CurState_1 = #watchdog_state{props = CurState},
-    CurState_2 =
+    {Level, CurState_2} =
         case (DiffInput  > MaxInput orelse
               DiffOutput > MaxOutput) of
             true ->
-                %% Nofify the message to the clients
-                case CallbackMod of
-                    undefined ->
-                        ok;
-                    _ ->
-                        erlang:apply(CallbackMod, notify, [Id, CurState])
-                end,
-                CurState_1#watchdog_state{state = ?WD_STATE_ERROR};
+                {?WD_LEVEL_ERROR,
+                 CurState_1#watchdog_state{state = ?WD_LEVEL_ERROR}};
             false ->
-                CurState_1#watchdog_state{state = ?WD_STATE_SAFE}
+                {?WD_LEVEL_SAFE,
+                 CurState_1#watchdog_state{state = ?WD_LEVEL_SAFE}}
         end,
+
+    %% If level is warning or error,
+    %% nofify the message to the clients
+    ?notify_msg(_Level, _State),
     catch leo_watchdog_state:put(?MODULE, CurState_2),
     {ok, State#state{prev_input  = CurInput,
                      prev_output = CurOutput}}.
