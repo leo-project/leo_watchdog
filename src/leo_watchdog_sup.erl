@@ -96,5 +96,11 @@ child_spec(disk, Args, Interval) ->
 %% @doc supervisor callback - Module:init(Args) -> Result
 %% @end
 init([]) ->
-    {ok, {{one_for_one, 5, 60}, []}}.
+    Spec = [{leo_watchdog_state,
+             {leo_watchdog_state, start_link, []},
+             permanent,
+             2000,
+             worker,
+             [leo_watchdog_state]}],
+    {ok, {{one_for_one, 5, 60}, Spec}}.
 

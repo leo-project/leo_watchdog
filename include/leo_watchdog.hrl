@@ -21,4 +21,20 @@
 %%======================================================================
 -author('Yosuke Hara').
 
+-undef(DEF_WATCH_INTERVAL).
 -define(DEF_WATCH_INTERVAL, 5000).
+-undef(DEF_TIMEOUT).
+-define(DEF_TIMEOUT, 5000).
+
+-type(watchdog_id() :: atom()).
+
+-define(WD_STATE_SAFE,  'safe').
+-define(WD_STATE_WARN,  'warn').
+-define(WD_STATE_ERROR, 'error').
+-type(watchdog_state() :: ?WD_STATE_SAFE |
+                          ?WD_STATE_WARN |
+                          ?WD_STATE_ERROR).
+-record(watchdog_state, {
+          state = ?WD_STATE_SAFE :: watchdog_state(),
+          props = [] :: [{atom(), any()}]
+         }).

@@ -97,31 +97,30 @@ handle_call(Id, #state{max_input    = MaxInput,
     DiffInput  = CurInput  - PrevInput,
     DiffOutput = CurOutput - PrevOutput,
 
-    case (DiffInput  > MaxInput orelse
-          DiffOutput > MaxOutput) of
-        true ->
-            %% Nofify the message to the clients
-            CurState = [{prev_input,  PrevInput},
-                        {prev_output, PrevOutput},
-                        {cur_input,   CurInput},
-                        {cur_output,  CurOutput},
-                        {diff_input,  DiffInput},
-                        {diff_output, DiffOutput}
-                       ],
-            error_logger:warning_msg(
-              "~p,~p,~p,~p~n",
-              [{module, ?MODULE_STRING},
-               {function, "handle_call/2"},
-               {line, ?LINE}, {body, CurState}]),
-            case CallbackMod of
-                undefined ->
-                    ok;
-                _ ->
-                    erlang:apply(CallbackMod, notify, [Id, CurState])
-            end;
-        false ->
-            ok
-    end,
+    CurState = [{prev_input,  PrevInput},
+                {prev_output, PrevOutput},
+                {cur_input,   CurInput},
+                {cur_output,  CurOutput},
+                {diff_input,  DiffInput},
+                {diff_output, DiffOutput}
+               ],
+    CurState_1 = #watchdog_state{props = CurState},
+    CurState_2 =
+        case (DiffInput  > MaxInput orelse
+              DiffOutput > MaxOutput) of
+            true ->
+                %% Nofify the message to the clients
+                case CallbackMod of
+                    undefined ->
+                        ok;
+                    _ ->
+                        erlang:apply(CallbackMod, notify, [Id, CurState])
+                end,
+                CurState_1#watchdog_state{state = ?WD_STATE_ERROR};
+            false ->
+                CurState_1#watchdog_state{state = ?WD_STATE_SAFE}
+        end,
+    catch leo_watchdog_state:put(?MODULE, CurState_2),
     {ok, State#state{prev_input  = CurInput,
                      prev_output = CurOutput}}.
 

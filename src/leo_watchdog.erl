@@ -98,11 +98,11 @@ handle_cast(_Msg, #state{interval = Interval} = State) ->
 %% <p>
 %% gen_server callback - Module:handle_info(Info, State) -> Result.
 %% </p>
-handle_info(timeout, State=#state{id = Id,
-                                  callback_mod = CallbackMod,
-                                  properties = Props,
-                                  interval = Interval
-                                 } = State) ->
+handle_info(timeout, #state{id = Id,
+                            callback_mod = CallbackMod,
+                            properties = Props,
+                            interval = Interval
+                           } = State) ->
     Props_1 = case catch erlang:apply(
                            CallbackMod, handle_call, [Id, Props]) of
                   {'EXIT', Cause} ->

@@ -88,37 +88,29 @@ handle_call(Id, #state{max_load_avg = MaxLoadAvg,
         AVG_5    = erlang:round(cpu_sup:avg5() / 256 * 1000) / 10,
         CPU_Util = erlang:round(cpu_sup:util() * 10) / 10,
 
-        case (MaxLoadAvg < AVG_1 orelse
-              MaxLoadAvg < AVG_5) of
-            true when CPU_Util > MaxCpuUtil ->
-                %% Nofify the message to the clients
-                CurState = [{load_avg_1, AVG_1},
-                            {load_avg_5, AVG_5},
-                            {cpu_util,   CPU_Util}
-                           ],
-                error_logger:warning_msg(
-                  "~p,~p,~p,~p~n",
-                  [{module, ?MODULE_STRING},
-                   {function, "handle_call/2"},
-                   {line, ?LINE}, {body, CurState}]),
-                case CallbackMod of
-                    undefined ->
-                        ok;
-                    _ ->
-                        erlang:apply(CallbackMod, notify, [Id, CurState])
-                end;
-            true ->
-                error_logger:info_msg(
-                  "~p,~p,~p,~p~n",
-                  [{module, ?MODULE_STRING},
-                   {function, "handle_call/2"},
-                   {line, ?LINE}, {body, [{load_avg_1, AVG_1},
-                                          {load_avg_5, AVG_5},
-                                          {cpu_util,   CPU_Util}
-                                         ]}]);
-            false ->
-                ok
-        end
+        CurState = [{load_avg_1, AVG_1},
+                    {load_avg_5, AVG_5},
+                    {cpu_util,   CPU_Util}
+                   ],
+        CurState_1 = #watchdog_state{props = CurState},
+        CurState_2 =
+            case (MaxLoadAvg < AVG_1 orelse
+                  MaxLoadAvg < AVG_5) of
+                true when CPU_Util > MaxCpuUtil ->
+                    %% Nofify the message to the clients
+                    case CallbackMod of
+                        undefined ->
+                            ok;
+                        _ ->
+                            erlang:apply(CallbackMod, notify, [Id, CurState])
+                    end,
+                    CurState_1#watchdog_state{state = ?WD_STATE_ERROR};
+                true ->
+                    CurState_1#watchdog_state{state = ?WD_STATE_WARN};
+                false ->
+                    CurState_1#watchdog_state{state = ?WD_STATE_SAFE}
+            end,
+        catch leo_watchdog_state:put(?MODULE, CurState_2)
     catch
         _:_ ->
             ok
