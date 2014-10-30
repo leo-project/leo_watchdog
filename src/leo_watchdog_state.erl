@@ -123,7 +123,6 @@ handle_call(find_not_safe_items, _From, #state{items = Items} = State) ->
               [] ->
                   not_found;
               Items_1 ->
-                  ?debugVal(Items_1),
                   {ok, Items_1}
           end,
     {reply, Ret, State}.
