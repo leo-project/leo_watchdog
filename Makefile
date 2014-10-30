@@ -2,7 +2,7 @@
 
 REBAR := ./rebar
 APPS = erts kernel stdlib sasl crypto compiler inets mnesia public_key runtime_tools snmp syntax_tools tools xmerl webtool ssl
-LIBS = deps/leo_commons/ebin deps/bitcask/ebin deps/eleveldb/ebin
+LIBS = deps/leo_commons/ebin
 PLT_FILE = .leo_watchdog_dialyzer_plt
 DOT_FILE = leo_watchdog.dot
 CALL_GRAPH_FILE = leo_watchdog.png

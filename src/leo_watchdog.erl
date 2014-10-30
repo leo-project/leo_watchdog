@@ -54,7 +54,7 @@
 -spec(start_link(Id, CallbackMod, Props, IntervalTime) ->
              {ok,Pid} | ignore | {error,Error} when Id::atom(),
                                                     CallbackMod::module(),
-                                                    Props::[{atom(), any()}],
+                                                    Props::tuple(),
                                                     IntervalTime::pos_integer(),
                                                     Pid::pid(),
                                                     Error::{already_started,Pid} | term()).

@@ -8,3 +8,6 @@ ebin
 rel/example_project
 .concrete/DEV_MODE
 .rebar
+.leo_watchdog_dialyzer_plt
+leo_watchdog.dot
+leo_watchdog.png

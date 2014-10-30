@@ -40,8 +40,10 @@
          handle_fail/2]).
 
 -define(PROP_MAX_MEM_CAPACITY, 'max_memory_capacity').
--define(DEF_MEM_CAPACITY, 33554432).
 
+-record(state, {
+          max_mem_capacity  = 0 :: pos_integer()
+         }).
 
 %%--------------------------------------------------------------------
 %% API
@@ -54,8 +56,7 @@
                                                     Error::{already_started,Pid} | term()).
 start_link(MaxMemCapacity, IntervalTime) ->
     leo_watchdog:start_link(?MODULE, ?MODULE,
-                            [{?PROP_MAX_MEM_CAPACITY, MaxMemCapacity}],
-                            IntervalTime).
+                            #state{max_mem_capacity = MaxMemCapacity}, IntervalTime).
 
 
 %% @doc Stop the server
@@ -70,12 +71,11 @@ stop() ->
 %%--------------------------------------------------------------------
 %% @dog Call execution of the watchdog
 -spec(handle_call(Id, State) ->
-             ok | {error,Error} when Id::atom(),
-                                     State::[{atom(), any()}],
-                                     Error::any()).
-handle_call(_Id, State) ->
-    MemCapacity = leo_misc:get_value(?PROP_MAX_MEM_CAPACITY,
-                                     State, ?DEF_MEM_CAPACITY),
+             {ok, State} |
+             {{error, Error}, State} when Id::atom(),
+                                          State::tuple(),
+                                          Error::any()).
+handle_call(_Id, #state{max_mem_capacity = MemCapacity} = State) ->
     case whereis(rex) of
         undefined ->
             {{error, not_running}, State};

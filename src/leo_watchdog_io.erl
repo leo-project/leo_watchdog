@@ -83,9 +83,10 @@ stop() ->
 %%--------------------------------------------------------------------
 %% @dog Call execution of the watchdog
 -spec(handle_call(Id, State) ->
-             ok | {error,Error} when Id::atom(),
-                                     State::#state{},
-                                     Error::any()).
+             {ok, State} |
+             {{error,Error}, State} when Id::atom(),
+                                         State::#state{},
+                                         Error::any()).
 handle_call(Id, #state{max_input    = MaxInput,
                        max_output   = MaxOutput,
                        callback_mod = CallbackMod,
