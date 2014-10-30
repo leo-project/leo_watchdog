@@ -42,9 +42,13 @@
 -export([disk_util/2]).
 
 -define(PROP_TARGET_PATHS,  'target_paths').
--define(PROP_MAX_DISK_UTIL, 'max_disk_util').
 -define(DEF_DISK_USAGE, 90.0).
 
+-record(state, {
+          target_paths = []   :: [string()],
+          max_disk_util = 0.0 :: float(),
+          callback_mod        :: module()
+         }).
 
 %%--------------------------------------------------------------------
 %% API
@@ -59,10 +63,8 @@
 start_link(TargetPaths, MaxDiskUtil, IntervalTime) ->
     ok = disksup:set_check_interval(1),
     leo_watchdog:start_link(?MODULE, ?MODULE,
-                            [{?PROP_TARGET_PATHS, TargetPaths},
-                             {?PROP_MAX_DISK_UTIL, MaxDiskUtil}
-                            ],
-                            IntervalTime).
+                            #state{target_paths  = TargetPaths,
+                                   max_disk_util = MaxDiskUtil}, IntervalTime).
 
 
 %% @doc Stop the server
@@ -77,14 +79,11 @@ stop() ->
 %%--------------------------------------------------------------------
 %% @dog Call execution of the watchdog
 -spec(handle_call(Id, State) ->
-             ok | {error,Error} when Id::atom(),
-                                     State::[{atom(), any()}],
-                                     Error::any()).
-handle_call(_Id, State) ->
-    TargetPaths = leo_misc:get_value(?PROP_TARGET_PATHS,
-                                     State, []),
-    MaxDiskUtil = leo_misc:get_value(?PROP_MAX_DISK_UTIL,
-                                     State, ?DEF_DISK_USAGE),
+             {ok, State} | {{error,Error}, State} when Id::atom(),
+                                                       State::#state{},
+                                                       Error::any()).
+handle_call(_Id, #state{target_paths  = TargetPaths,
+                        max_disk_util = MaxDiskUtil} = State) ->
     ok = check_disk_usage(TargetPaths, MaxDiskUtil),
     {ok, State}.
 
@@ -98,27 +97,22 @@ check_disk_usage([Path|Rest], MaxDiskUtil) ->
         [{"none",_,_}] ->
             void;
         DiskData ->
-            case disk_util(Tokens, DiskData) of
-                [] ->
-                    void;
-                {MountPath, TotalSize, UsedPercentage} ->
-                    case UsedPercentage > MaxDiskUtil of
-                        true ->
-                            error_logger:warning_msg(
-                              "~p,~p,~p,~p~n",
-                              [{module, ?MODULE_STRING},
-                               {function, "handle_call/2"},
-                               {line, ?LINE}, {body, [{path,  MountPath},
-                                                      {total_size, TotalSize},
-                                                      {utilization, UsedPercentage}
-                                                     ]}]),
-                            %% @TODO:
-                            %% Nofify the message to the clients
-                            ok;
-                        false ->
-                            ok
-                    end;
-                _ ->
+            {MountPath, TotalSize, UsedPercentage} =
+                disk_util(Tokens, DiskData),
+            case UsedPercentage > MaxDiskUtil of
+                true ->
+                    error_logger:warning_msg(
+                      "~p,~p,~p,~p~n",
+                      [{module, ?MODULE_STRING},
+                       {function, "handle_call/2"},
+                       {line, ?LINE}, {body, [{path,  MountPath},
+                                              {total_size, TotalSize},
+                                              {utilization, UsedPercentage}
+                                             ]}]),
+                    %% @TODO:
+                    %% Nofify the message to the clients
+                    ok;
+                false ->
                     ok
             end
     end,

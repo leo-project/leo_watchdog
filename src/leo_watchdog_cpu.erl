@@ -54,7 +54,7 @@
              ignore |
              {error,Error} when MaxLoadAvg::float(),
                                 MaxCPUUtil::float(),
-                                CallbackMod::function(),
+                                CallbackMod::module(),
                                 Interval::pos_integer(),
                                 Pid::pid(),
                                 Error::{already_started,Pid} | term()).
@@ -77,9 +77,9 @@ stop() ->
 %%--------------------------------------------------------------------
 %% @dog Call execution of the watchdog
 -spec(handle_call(Id, State) ->
-             ok | {error,Error} when Id::atom(),
-                                     State::#state{},
-                                     Error::any()).
+             {ok, State} | {{error,Error}, State} when Id::atom(),
+                                                       State::#state{},
+                                                       Error::any()).
 handle_call(Id, #state{max_load_avg = MaxLoadAvg,
                        max_cpu_util = MaxCpuUtil,
                        callback_mod = CallbackMod} = State) ->

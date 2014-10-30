@@ -1,6 +1,8 @@
 leo_watchdog
 ============
 
+[![Build Status](https://secure.travis-ci.org/leo-project/leo_watchdog.png?branch=master)](http://travis-ci.org/leo-project/leo_watchdog)
+
 **leo_watchdog** keeps monitoring an application in order to realize high-availability.
 
 ## Build Information
