@@ -67,6 +67,13 @@ start_child(Type, Args, Interval) ->
     end.
 
 %% @private
+child_spec(rex, Args, Interval) ->
+    {leo_watchdog_rex,
+     {leo_watchdog_rex, start_link, Args ++ [Interval]},
+     permanent,
+     2000,
+     worker,
+     [leo_watchdog_rex]};
 child_spec(cpu, Args, Interval) ->
     {leo_watchdog_cpu,
      {leo_watchdog_cpu, start_link, Args ++ [Interval]},

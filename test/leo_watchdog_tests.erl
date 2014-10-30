@@ -49,10 +49,12 @@ suite_test_() ->
      fun ( ) ->
              application:start(leo_watchdog),
              Interval   = 1000,
+             MaxMemForBin = 1024 * 1024 * 32,
              MaxLoadAvg = 50,
              MaxCPUUtil = 10,
              MaxInput   = 1024,
              MaxOutput  = 1024,
+             ok = leo_watchdog_sup:start_child(rex, [MaxMemForBin], Interval),
              ok = leo_watchdog_sup:start_child(cpu, [MaxLoadAvg, MaxCPUUtil, ?MODULE], Interval),
              ok = leo_watchdog_sup:start_child(io,  [MaxInput, MaxOutput, ?MODULE], Interval),
              ok
