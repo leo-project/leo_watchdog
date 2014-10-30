@@ -107,6 +107,8 @@ handle_call(Id, #state{max_load_avg = MaxLoadAvg,
                     CurState_1#watchdog_state{state = ?WD_STATE_ERROR};
                 true ->
                     CurState_1#watchdog_state{state = ?WD_STATE_WARN};
+                false when CPU_Util > MaxCpuUtil ->
+                    CurState_1#watchdog_state{state = ?WD_STATE_WARN};
                 false ->
                     CurState_1#watchdog_state{state = ?WD_STATE_SAFE}
             end,
