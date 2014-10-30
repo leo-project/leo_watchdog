@@ -59,7 +59,7 @@
                                                     Pid::pid(),
                                                     Error::{already_started,Pid} | term()).
 start_link(Id, CallbackMod, Props, IntervalTime) ->
-    gen_server:start_link(?MODULE,
+    gen_server:start_link({local, Id}, ?MODULE,
                           [Id, CallbackMod, Props, IntervalTime], []).
 
 
