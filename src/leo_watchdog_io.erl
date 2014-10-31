@@ -106,9 +106,10 @@ handle_call(Id, #state{max_input    = MaxInput,
                 {diff_output, DiffOutput}
                ],
     CurState_1 = #watchdog_state{props = CurState},
+    CurTotalIO = DiffInput + DiffOutput,
+    ThresholdIO = MaxInput + MaxOutput,
     {Level, CurState_2} =
-        case (DiffInput  > MaxInput orelse
-              DiffOutput > MaxOutput) of
+        case (CurTotalIO > ThresholdIO) of
             true ->
                 {?WD_LEVEL_ERROR,
                  CurState_1#watchdog_state{state = ?WD_LEVEL_ERROR}};
