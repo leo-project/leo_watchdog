@@ -39,16 +39,12 @@
           props = [] :: [{atom(), any()}]
          }).
 
--define(notify_msg(_Level, _State),
-        begin
-            case (Level == ?WD_LEVEL_WARN orelse
-                  Level == ?WD_LEVEL_ERROR) of
-                true when CallbackMod /= undefined->
-                    erlang:apply(CallbackMod, notify,
-                                 [Id, Level, CurState]);
-                _ ->
-                    void
-            end
+-define(notify_msg(_CallbackMod, _Level, _State),
+        case _CallbackMod of
+            undefined ->
+                ok;
+            _ ->
+                catch erlang:apply(_CallbackMod, notify, [Id, Level, CurState])
         end).
 
 %% defalut constants

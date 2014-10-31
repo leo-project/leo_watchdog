@@ -59,6 +59,8 @@
                                                     Pid::pid(),
                                                     Error::{already_started,Pid} | term()).
 start_link(Id, CallbackMod, Props, IntervalTime) ->
+    %% Takes conflict execution measures
+    timer:sleep(erlang:phash2(leo_date:clock(), timer:seconds(1))),
     gen_server:start_link({local, Id}, ?MODULE,
                           [Id, CallbackMod, Props, IntervalTime], []).
 

@@ -113,7 +113,7 @@ handle_call(Id, #state{max_load_avg = MaxLoadAvg,
 
         %% If level is warning or error,
         %% nofify the message to the clients
-        ?notify_msg(_Level, _State),
+        ?notify_msg(CallbackMod, Level, CurState_2),
         catch leo_watchdog_state:put(?MODULE, CurState_2)
     catch
         _:_ ->
