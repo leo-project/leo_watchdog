@@ -44,7 +44,8 @@
           max_output = 0  :: pos_integer(),
           callback_mod    :: module(),
           prev_input  = 0 :: pos_integer(),
-          prev_output = 0 :: pos_integer()
+          prev_output = 0 :: pos_integer(),
+          interval = timer:seconds(1) :: pos_integer()
          }).
 
 
@@ -67,7 +68,9 @@ start_link(MaxInputForInterval, MaxOutputForInterval, CallbackMod, Interval) ->
                    max_output   = MaxOutputForInterval,
                    callback_mod = CallbackMod,
                    prev_input   = MaxInputForInterval,
-                   prev_output  = MaxOutputForInterval},
+                   prev_output  = MaxOutputForInterval,
+                   interval     = Interval
+                  },
     leo_watchdog:start_link(?MODULE, ?MODULE, State, Interval).
 
 
@@ -91,7 +94,8 @@ handle_call(Id, #state{max_input    = MaxInput,
                        max_output   = MaxOutput,
                        callback_mod = CallbackMod,
                        prev_input   = PrevInput,
-                       prev_output  = PrevOutput} = State) ->
+                       prev_output  = PrevOutput,
+                       interval     = Interval} = State) ->
     RetL = tuple_to_list(erlang:statistics(io)),
     CurInput  = leo_misc:get_value('input',  RetL, 0),
     CurOutput = leo_misc:get_value('output', RetL, 0),
@@ -107,7 +111,8 @@ handle_call(Id, #state{max_input    = MaxInput,
                ],
     CurState_1 = #watchdog_state{props = CurState},
     CurTotalIO = DiffInput + DiffOutput,
-    ThresholdIO = MaxInput + MaxOutput,
+    ThresholdIO = erlang:round((MaxInput + MaxOutput) * Interval / 1000),
+
     {Level, CurState_2} =
         case (CurTotalIO > ThresholdIO) of
             true ->
