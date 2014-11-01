@@ -85,10 +85,14 @@ handle_call(Id, #state{max_load_avg = MaxLoadAvg,
                         max_cpu_util = MaxCpuUtil,
                         callback_mod = CallbackMod} = State) ->
     try
-        AVG_1    = erlang:round(cpu_sup:avg1() / 256 * 1000) / 10,
-        AVG_5    = erlang:round(cpu_sup:avg5() / 256 * 1000) / 10,
-        CPU_Util = erlang:round(cpu_sup:util() * 10) / 10,
-
+        AVG_1 = erlang:round(cpu_sup:avg1() / 256 * 1000) / 10,
+        AVG_5 = erlang:round(cpu_sup:avg5() / 256 * 1000) / 10,
+        CPU_Util = case os:type() of
+                       {unix, linux} ->
+                           erlang:round(cpu_sup:util() * 10) / 10;
+                       _OtherOS ->
+                           0
+                   end,
         CurState = [{load_avg_1, AVG_1},
                     {load_avg_5, AVG_5},
                     {cpu_util,   CPU_Util}
