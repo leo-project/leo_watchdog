@@ -39,12 +39,12 @@
           props = [] :: [{atom(), any()}]
          }).
 
--define(notify_msg(_CallbackMod, _Level, _State),
+-define(notify_msg(_Id, _CallbackMod, _Level, _State),
         case _CallbackMod of
             undefined ->
                 ok;
             _ ->
-                catch erlang:apply(_CallbackMod, notify, [Id, Level, CurState])
+                catch erlang:apply(_CallbackMod, notify, [_Id, _Level, _State])
         end).
 
 %% defalut constants

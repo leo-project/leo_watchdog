@@ -82,8 +82,8 @@ stop() ->
                                                        State::#state{},
                                                        Error::any()).
 handle_call(Id, #state{max_load_avg = MaxLoadAvg,
-                       max_cpu_util = MaxCpuUtil,
-                       callback_mod = CallbackMod} = State) ->
+                        max_cpu_util = MaxCpuUtil,
+                        callback_mod = CallbackMod} = State) ->
     try
         AVG_1    = erlang:round(cpu_sup:avg1() / 256 * 1000) / 10,
         AVG_5    = erlang:round(cpu_sup:avg5() / 256 * 1000) / 10,
@@ -113,7 +113,7 @@ handle_call(Id, #state{max_load_avg = MaxLoadAvg,
 
         %% If level is warning or error,
         %% nofify the message to the clients
-        ?notify_msg(CallbackMod, Level, CurState_2),
+        ?notify_msg(Id, CallbackMod, Level, CurState_2),
         catch leo_watchdog_state:put(?MODULE, CurState_2)
     catch
         _:_ ->
