@@ -123,6 +123,14 @@
             _ ->
                 ?DEF_OUTPUT_FOR_INTERVAL
         end).
+
+-define(env_watchdog_disk_enabled(App),
+        case application:get_env(App, watchdog_disk_enabled) of
+            {ok, EnvWDDiskEnabled} ->
+                EnvWDDiskEnabled;
+            _ ->
+                true
+        end).
 -define(env_watchdog_max_disk_util(App),
         case application:get_env(App, watchdog_max_disk_util) of
             {ok, EnvWDMaxDiskUtil} ->
