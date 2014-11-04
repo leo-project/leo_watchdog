@@ -32,7 +32,7 @@
 -include_lib("eunit/include/eunit.hrl").
 
 %% API
--export([start_link/4,
+-export([start_link/5,
          stop/0]).
 
 %% Callback
@@ -49,6 +49,7 @@
 -record(state, {
           target_paths = []   :: [string()],
           max_disk_util = 0.0 :: float(),
+          max_io_wait   = 0   :: non_neg_integer(),
           callback_mod        :: module()
          }).
 
@@ -66,17 +67,20 @@
 %% API
 %%--------------------------------------------------------------------
 %% @doc Start the server
--spec(start_link(TargetPaths, MaxDiskUtil, CallbackMod, IntervalTime) ->
+-spec(start_link(TargetPaths, MaxDiskUtil, MaxIoWait,
+                 CallbackMod, IntervalTime) ->
              {ok,Pid} | ignore | {error,Error} when TargetPaths::[string()],
                                                     MaxDiskUtil::float(),
+                                                    MaxIoWait::non_neg_integer(),
                                                     CallbackMod::module(),
                                                     IntervalTime::pos_integer(),
                                                     Pid::pid(),
                                                     Error::{already_started,Pid} | term()).
-start_link(TargetPaths, MaxDiskUtil, CallbackMod, IntervalTime) ->
+start_link(TargetPaths, MaxDiskUtil, MaxIoWait, CallbackMod, IntervalTime) ->
     leo_watchdog:start_link(?MODULE, ?MODULE,
                             #state{target_paths  = TargetPaths,
                                    max_disk_util = MaxDiskUtil,
+                                   max_io_wait   = MaxIoWait,
                                    callback_mod  = CallbackMod}, IntervalTime).
 
 
@@ -133,12 +137,28 @@ get_disk_data(_,_) ->
 %% Callback
 %%--------------------------------------------------------------------
 %% @dog Call execution of the watchdog
+%% <pre>
+%% Stored state of format:
+%% [{level,error},
+%%  {state, [{disk_util, [[{level, error},
+%%                         {disk_data,
+%%                           [{filesystem, "/dev/mapper/ubuntu--vg-root"},
+%%                            {blocks, 114477656},
+%%                            {used, 62649652},
+%%                            {available, 45989772},
+%%                            {use_percentage, 60},
+%%                            {mounted_on, "/"}
+%%                           ]
+%%                         }]]},
+%%           {io_wait, 0}]
+%%  }]
+%% </pre>
 -spec(handle_call(Id, State) ->
              {ok, State} | {{error,Error}, State} when Id::atom(),
                                                        State::#state{},
                                                        Error::any()).
 handle_call(_Id, #state{target_paths  = TargetPaths} = State) ->
-    ok = check_disk_usage(TargetPaths, State, []),
+    ok = check(TargetPaths, State, []),
     {ok, State}.
 
 
@@ -154,20 +174,41 @@ handle_fail(_Id,_Cause) ->
 %%--------------------------------------------------------------------
 %% Internal Function
 %%--------------------------------------------------------------------
-%% @doc
+%% @doc Check disk-related items
 %% @private
-check_disk_usage([], #state{callback_mod  = CallbackMod},Acc) ->
-    Level = lists:foldl(fun({?WD_LEVEL_ERROR = L, _},_) ->
-                                L;
-                           ({?WD_LEVEL_WARN = L, _}, ?WD_LEVEL_SAFE) ->
-                                L;
-                           (_, SoFar) ->
-                                SoFar
-                        end, ?WD_LEVEL_SAFE, Acc),
-    ?notify_msg(?MODULE, CallbackMod, Level, Acc),
-    catch leo_watchdog_state:put(?MODULE, Acc),
+check([], #state{callback_mod  = CallbackMod} = State, Acc) ->
+    DiskUtilLevel = lists:foldl(
+                      fun(DiskData, SoFar) ->
+                              case leo_misc:get_value(level, DiskData) of
+                                  ?WD_LEVEL_ERROR = L ->
+                                      L;
+                                  ?WD_LEVEL_WARN = L when SoFar == ?WD_LEVEL_SAFE ->
+                                      L;
+                                  _ ->
+                                      SoFar
+                              end
+                      end, ?WD_LEVEL_SAFE, Acc),
+
+    {IoWaitLevel, IoWait} = io_wait(State),
+    RetLevel = case DiskUtilLevel of
+                   ?WD_LEVEL_ERROR ->
+                       DiskUtilLevel;
+                   ?WD_LEVEL_WARN when IoWaitLevel == ?WD_LEVEL_ERROR ->
+                       ?WD_LEVEL_ERROR;
+                   ?WD_LEVEL_WARN ->
+                       DiskUtilLevel;
+                   ?WD_LEVEL_SAFE when IoWaitLevel == ?WD_LEVEL_ERROR ->
+                       ?WD_LEVEL_ERROR;
+                   ?WD_LEVEL_SAFE ->
+                       DiskUtilLevel
+               end,
+    Ret = [{disk_util, Acc},
+           {io_wait, IoWait}],
+
+    ?notify_msg(?MODULE, CallbackMod, RetLevel, Ret),
+    catch leo_watchdog_state:put(?MODULE, Ret),
     ok;
-check_disk_usage([Path|Rest], #state{max_disk_util = MaxDiskUtil} = State, Acc) ->
+check([Path|Rest], #state{max_disk_util = MaxDiskUtil} = State, Acc) ->
     Acc_1 = case get_disk_data() of
                 [] ->
                     Acc;
@@ -182,9 +223,10 @@ check_disk_usage([Path|Rest], #state{max_disk_util = MaxDiskUtil} = State, Acc) 
                     DiskData_2 = lists:zip(
                                    record_info(fields, disk_data),
                                    tl(tuple_to_list(DiskData_1))),
-                    [{Level, DiskData_2} | Acc]
+                    [ [{level, Level},
+                       {disk_data, DiskData_2}] | Acc ]
             end,
-    check_disk_usage(Rest, State, Acc_1).
+    check(Rest, State, Acc_1).
 
 %% @doc
 %% @private
@@ -216,3 +258,27 @@ disk_util_1([#disk_data{
                        (100 - erlang:round(Available/Blocks * 100))};
 disk_util_1([_|Rest], Path) ->
     disk_util_1(Rest, Path).
+
+
+%% @private
+io_wait(#state{max_io_wait = MaxIoWait}) ->
+    IoWait = io_wait_1(os:type()),
+    Level  = case (IoWait >  MaxIoWait) of
+                 true ->
+                     ?WD_LEVEL_ERROR;
+                 false ->
+                     ?WD_LEVEL_SAFE
+             end,
+    {Level, IoWait}.
+
+%% @doc Retrieve io-wait for Linux
+%% @private
+io_wait_1({unix, linux}) ->
+    list_to_integer(
+      erlang:hd(
+        string:tokens(
+          os:cmd("vmstat | tail -n 1 | awk '{print $16}'"), "\n")));
+%% @TODO solaris/smartos
+%% @TODO freebsd
+io_wait_1(_) ->
+    0.

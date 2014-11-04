@@ -82,8 +82,8 @@ stop() ->
                                                        State::#state{},
                                                        Error::any()).
 handle_call(Id, #state{max_load_avg = MaxLoadAvg,
-                        max_cpu_util = MaxCpuUtil,
-                        callback_mod = CallbackMod} = State) ->
+                       max_cpu_util = MaxCpuUtil,
+                       callback_mod = CallbackMod} = State) ->
     try
         AVG_1 = erlang:round(cpu_sup:avg1() / 256 * 1000) / 10,
         AVG_5 = erlang:round(cpu_sup:avg5() / 256 * 1000) / 10,
@@ -97,10 +97,12 @@ handle_call(Id, #state{max_load_avg = MaxLoadAvg,
                     {load_avg_5, AVG_5},
                     {cpu_util,   CPU_Util}
                    ],
+        ?debugVal(CurState),
+
         CurState_1 = #watchdog_state{props = CurState},
         {Level, CurState_2} =
-            case (MaxLoadAvg < AVG_1 orelse
-                  MaxLoadAvg < AVG_5) of
+            case (MaxLoadAvg * 100 < AVG_1 orelse
+                  MaxLoadAvg * 100 < AVG_5) of
                 true when CPU_Util > MaxCpuUtil ->
                     {?WD_LEVEL_ERROR,
                      CurState_1#watchdog_state{state = ?WD_LEVEL_ERROR}};
