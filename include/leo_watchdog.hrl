@@ -56,14 +56,7 @@
 -define(DEF_DISK_UTIL,      90.0).
 -define(DEF_IO_WAIT,        90).
 
--define(env_watchdog_check_interval(App),
-        case application:get_env(App, watchdog_check_interval) of
-            {ok, EnvWDCheckInterval} ->
-                EnvWDCheckInterval;
-            _ ->
-                ?DEF_WATCH_INTERVAL
-        end).
-
+%% @doc Watchdog - rex - Is enabled
 -define(env_watchdog_rex_enabled(App),
         case application:get_env(App, watchdog_rex_enabled) of
             {ok, EnvWDRexEnabled} ->
@@ -71,6 +64,15 @@
             _ ->
                 true
         end).
+%% @doc Watchdog - rex - interval
+-define(env_watchdog_rex_interval(App),
+        case application:get_env(App, watchdog_rex_interval) of
+            {ok, EnvWDRexInterval} ->
+                EnvWDRexInterval;
+            _ ->
+                ?DEF_WATCH_INTERVAL
+        end).
+%% @doc Watchdog - rex - max memory capacity for binary
 -define(env_watchdog_max_mem_capacity(App),
         case application:get_env(App, watchdog_max_mem_capacity) of
             {ok, EnvWDMaxMemCapacity} ->
@@ -80,6 +82,7 @@
         end).
 
 
+%% @doc Watchdog - cpu - is enabled
 -define(env_watchdog_cpu_enabled(App),
         case application:get_env(App, watchdog_cpu_enabled) of
             {ok, EnvWDCpuEnabled} ->
@@ -87,6 +90,15 @@
             _ ->
                 true
         end).
+%% @doc Watchdog - cpu - interval
+-define(env_watchdog_cpu_interval(App),
+        case application:get_env(App, watchdog_cpu_interval) of
+            {ok, EnvWDCpuInterval} ->
+                EnvWDCpuInterval;
+            _ ->
+                ?DEF_WATCH_INTERVAL
+        end).
+%% @doc Watchdog - cpu - max cpu load avg
 -define(env_watchdog_max_cpu_load_avg(App),
         case application:get_env(App, watchdog_max_cpu_load_avg) of
             {ok, EnvWDMaxCpuLoadAvg} ->
@@ -94,6 +106,7 @@
             _ ->
                 ?DEF_CPU_LOAD_AVG
         end).
+%% @doc Watchdog - cpu - max cpu util
 -define(env_watchdog_max_cpu_util(App),
         case application:get_env(App, watchdog_max_cpu_util) of
             {ok, EnvWDMaxCpuUtil} ->
@@ -103,6 +116,7 @@
         end).
 
 
+%% @doc Watchdog - io - Is enabled
 -define(env_watchdog_io_enabled(App),
         case application:get_env(App, watchdog_io_enabled) of
             {ok, EnvWDIOEnabled} ->
@@ -110,6 +124,15 @@
             _ ->
                 true
         end).
+%% @doc Watchdog - io - interval
+-define(env_watchdog_io_interval(App),
+        case application:get_env(App, watchdog_io_interval) of
+            {ok, EnvWDIoInterval} ->
+                EnvWDIoInterval;
+            _ ->
+                ?DEF_WATCH_INTERVAL
+        end).
+%% @doc Watchdog - io - max input/sec
 -define(env_watchdog_max_input_per_sec(App),
         case application:get_env(App, watchdog_max_input_per_sec) of
             {ok, EnvWDMaxInputPerSec} ->
@@ -117,6 +140,7 @@
             _ ->
                 ?DEF_INPUT_PER_SEC
         end).
+%% @doc Watchdog - io - max output/sec
 -define(env_watchdog_max_output_per_sec(App),
         case application:get_env(App, watchdog_max_output_per_sec) of
             {ok, EnvWDMaxOutputPerSec} ->
@@ -125,6 +149,8 @@
                 ?DEF_OUTPUT_PER_SEC
         end).
 
+
+%% @doc Watchdog - disk - Is enabled
 -define(env_watchdog_disk_enabled(App),
         case application:get_env(App, watchdog_disk_enabled) of
             {ok, EnvWDDiskEnabled} ->
@@ -132,6 +158,15 @@
             _ ->
                 true
         end).
+%% @doc Watchdog - disk - interval
+-define(env_watchdog_disk_interval(App),
+        case application:get_env(App, watchdog_disk_interval) of
+            {ok, EnvWDDiskInterval} ->
+                EnvWDDiskInterval;
+            _ ->
+                ?DEF_WATCH_INTERVAL
+        end).
+%% @doc Watchdog - disk - max disk utilization
 -define(env_watchdog_max_disk_util(App),
         case application:get_env(App, watchdog_max_disk_util) of
             {ok, EnvWDMaxDiskUtil} ->
@@ -139,6 +174,7 @@
             _ ->
                 ?DEF_DISK_UTIL
         end).
+%% @doc Watchdog - disk - max iowait
 -define(env_watchdog_max_io_wait(App),
         case application:get_env(App, watchdog_max_io_wait) of
             {ok, EnvWDMaxIoWait} ->
