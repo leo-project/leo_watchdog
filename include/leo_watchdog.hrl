@@ -51,8 +51,8 @@
 -define(DEF_MEM_CAPACITY, 33554432).
 -define(DEF_CPU_LOAD_AVG, 100.0).
 -define(DEF_CPU_UTIL,      90.0).
--define(DEF_INPUT_FOR_INTERVAL,  134217728). %% 128MB
--define(DEF_OUTPUT_FOR_INTERVAL, 134217728). %% 128MB
+-define(DEF_INPUT_PER_SEC,  134217728). %% 128MB
+-define(DEF_OUTPUT_PER_SEC, 134217728). %% 128MB
 -define(DEF_DISK_UTIL,      90.0).
 
 -define(env_watchdog_check_interval(App),
@@ -109,19 +109,19 @@
             _ ->
                 true
         end).
--define(env_watchdog_max_input_for_interval(App),
-        case application:get_env(App, watchdog_max_input_for_interval) of
-            {ok, EnvWDMaxInputForInterval} ->
-                EnvWDMaxInputForInterval;
+-define(env_watchdog_max_input_per_sec(App),
+        case application:get_env(App, watchdog_max_input_per_sec) of
+            {ok, EnvWDMaxInputPerSec} ->
+                EnvWDMaxInputPerSec;
             _ ->
-                ?DEF_INPUT_FOR_INTERVAL
+                ?DEF_INPUT_PER_SEC
         end).
--define(env_watchdog_max_output_for_interval(App),
-        case application:get_env(App, watchdog_max_output_for_interval) of
-            {ok, EnvWDMaxOutputForInterval} ->
-                EnvWDMaxOutputForInterval;
+-define(env_watchdog_max_output_per_sec(App),
+        case application:get_env(App, watchdog_max_output_per_sec) of
+            {ok, EnvWDMaxOutputPerSec} ->
+                EnvWDMaxOutputPerSec;
             _ ->
-                ?DEF_OUTPUT_FOR_INTERVAL
+                ?DEF_OUTPUT_PER_SEC
         end).
 
 -define(env_watchdog_disk_enabled(App),
