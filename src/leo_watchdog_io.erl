@@ -111,7 +111,7 @@ handle_call(Id, #state{max_input    = MaxInput,
                ],
     CurState_1 = #watchdog_state{props = CurState},
     CurTotalIO = DiffInput + DiffOutput,
-    ThresholdIO = erlang:round((MaxInput + MaxOutput) * Interval / 1000),
+    ThresholdIO = erlang:round((MaxInput + MaxOutput) * Interval),
 
     {Level, CurState_2} =
         case (CurTotalIO > ThresholdIO) of
