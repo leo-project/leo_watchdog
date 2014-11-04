@@ -32,7 +32,7 @@
 -include_lib("eunit/include/eunit.hrl").
 
 %% API
--export([start_link/5,
+-export([start_link/4,
          stop/0]).
 
 %% Callback
@@ -47,10 +47,9 @@
 -define(DEF_DISK_USAGE, 90.0).
 
 -record(state, {
-          target_paths = []   :: [string()],
-          max_disk_util = 0.0 :: float(),
-          max_io_wait   = 0   :: non_neg_integer(),
-          callback_mod        :: module()
+          target_paths = [] :: [string()],
+          threshold_disk_util = 0.0 :: float(),
+          threshold_iowait    = 0   :: non_neg_integer()
          }).
 
 -record(disk_data, {
@@ -67,21 +66,18 @@
 %% API
 %%--------------------------------------------------------------------
 %% @doc Start the server
--spec(start_link(TargetPaths, MaxDiskUtil, MaxIoWait,
-                 CallbackMod, IntervalTime) ->
+-spec(start_link(TargetPaths, ThresholdDiskUtil, ThresholdIoWait, IntervalTime) ->
              {ok,Pid} | ignore | {error,Error} when TargetPaths::[string()],
-                                                    MaxDiskUtil::float(),
-                                                    MaxIoWait::non_neg_integer(),
-                                                    CallbackMod::module(),
+                                                    ThresholdDiskUtil::float(),
+                                                    ThresholdIoWait::non_neg_integer(),
                                                     IntervalTime::pos_integer(),
                                                     Pid::pid(),
                                                     Error::{already_started,Pid} | term()).
-start_link(TargetPaths, MaxDiskUtil, MaxIoWait, CallbackMod, IntervalTime) ->
+start_link(TargetPaths, ThresholdDiskUtil, ThresholdIoWait, IntervalTime) ->
     leo_watchdog:start_link(?MODULE, ?MODULE,
                             #state{target_paths  = TargetPaths,
-                                   max_disk_util = MaxDiskUtil,
-                                   max_io_wait   = MaxIoWait,
-                                   callback_mod  = CallbackMod}, IntervalTime).
+                                   threshold_disk_util = ThresholdDiskUtil,
+                                   threshold_iowait   = ThresholdIoWait}, IntervalTime).
 
 
 %% @doc Stop the server
@@ -157,8 +153,8 @@ get_disk_data(_,_) ->
              {ok, State} | {{error,Error}, State} when Id::atom(),
                                                        State::#state{},
                                                        Error::any()).
-handle_call(_Id, #state{target_paths  = TargetPaths} = State) ->
-    ok = check(TargetPaths, State, []),
+handle_call(Id, #state{target_paths  = TargetPaths} = State) ->
+    ok = check(Id, TargetPaths, State, []),
     {ok, State}.
 
 
@@ -176,47 +172,48 @@ handle_fail(_Id,_Cause) ->
 %%--------------------------------------------------------------------
 %% @doc Check disk-related items
 %% @private
-check([], #state{callback_mod  = CallbackMod} = State, Acc) ->
-    DiskUtilLevel = lists:foldl(
-                      fun(DiskData, SoFar) ->
-                              case leo_misc:get_value(level, DiskData) of
-                                  ?WD_LEVEL_ERROR = L ->
-                                      L;
-                                  ?WD_LEVEL_WARN = L when SoFar == ?WD_LEVEL_SAFE ->
-                                      L;
-                                  _ ->
-                                      SoFar
-                              end
-                      end, ?WD_LEVEL_SAFE, Acc),
+check(Id, [], State, Acc) ->
+    %% Disk util
+    lists:foreach(
+      fun(DiskData) ->
+              L = leo_misc:get_value(level, DiskData),
+              D = leo_misc:get_value(disk_data, DiskData, []),
+              M = leo_misc:get_value(mounted_on, D),
+              case L of
+                  ?WD_LEVEL_SAFE->
+                      elarm:clear(Id, {?WD_ITEM_DISK_UTIL, M});
+                  _ ->
+                      elarm:raise(Id, {?WD_ITEM_DISK_UTIL, M},
+                                  [{level, L},
+                                   {?WD_ITEM_DISK_UTIL, D}
+                                  ])
+              end
+      end, Acc),
 
+    %% iowait
     {IoWaitLevel, IoWait} = io_wait(State),
-    RetLevel = case DiskUtilLevel of
-                   ?WD_LEVEL_ERROR ->
-                       DiskUtilLevel;
-                   ?WD_LEVEL_WARN when IoWaitLevel == ?WD_LEVEL_ERROR ->
-                       ?WD_LEVEL_ERROR;
-                   ?WD_LEVEL_WARN ->
-                       DiskUtilLevel;
-                   ?WD_LEVEL_SAFE when IoWaitLevel == ?WD_LEVEL_ERROR ->
-                       ?WD_LEVEL_ERROR;
-                   ?WD_LEVEL_SAFE ->
-                       DiskUtilLevel
-               end,
-    Ret = [{disk_util, Acc},
-           {io_wait, IoWait}],
-
-    ?notify_msg(?MODULE, CallbackMod, RetLevel, Ret),
-    catch leo_watchdog_state:put(?MODULE, Ret),
+    case IoWaitLevel of
+        ?WD_LEVEL_SAFE->
+            elarm:clear(Id, ?WD_ITEM_IOWAIT);
+        _ ->
+            elarm:raise(Id, ?WD_ITEM_IOWAIT,
+                        [{level, IoWaitLevel},
+                         {?WD_ITEM_IOWAIT, IoWait}
+                        ])
+    end,
     ok;
-check([Path|Rest], #state{max_disk_util = MaxDiskUtil} = State, Acc) ->
+check(Id, [Path|Rest], #state{threshold_disk_util = ThresholdDiskUtil} = State, Acc) ->
     Acc_1 = case get_disk_data() of
                 [] ->
                     Acc;
                 DiskData ->
                     DiskData_1 = disk_util(string:tokens(Path, "/"), DiskData),
-                    Level = case DiskData_1#disk_data.use_percentage > MaxDiskUtil of
+                    UsePercentage = DiskData_1#disk_data.use_percentage,
+                    Level = case UsePercentage > ThresholdDiskUtil of
                                 true ->
                                     ?WD_LEVEL_ERROR;
+                                false when UsePercentage >= ?WD_WARN_USE_PERCENTAGE ->
+                                    ?WD_LEVEL_WARN;
                                 false ->
                                     ?WD_LEVEL_SAFE
                             end,
@@ -226,7 +223,7 @@ check([Path|Rest], #state{max_disk_util = MaxDiskUtil} = State, Acc) ->
                     [ [{level, Level},
                        {disk_data, DiskData_2}] | Acc ]
             end,
-    check(Rest, State, Acc_1).
+    check(Id, Rest, State, Acc_1).
 
 %% @doc
 %% @private
@@ -261,9 +258,9 @@ disk_util_1([_|Rest], Path) ->
 
 
 %% @private
-io_wait(#state{max_io_wait = MaxIoWait}) ->
+io_wait(#state{threshold_iowait = ThresholdIoWait}) ->
     IoWait = io_wait_1(os:type()),
-    Level  = case (IoWait >  MaxIoWait) of
+    Level  = case (IoWait >  ThresholdIoWait) of
                  true ->
                      ?WD_LEVEL_ERROR;
                  false ->

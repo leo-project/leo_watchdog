@@ -32,7 +32,7 @@
 -include_lib("eunit/include/eunit.hrl").
 
 %% API
--export([start_link/4,
+-export([start_link/3,
          stop/0]).
 
 %% Callback
@@ -40,9 +40,8 @@
          handle_fail/2]).
 
 -record(state, {
-          max_load_avg = 0.0 :: float(),
-          max_cpu_util = 0.0 :: float(),
-          callback_mod       :: module()
+          threshold_load_avg = 0.0 :: float(),
+          threshold_cpu_util = 0.0 :: float()
          }).
 
 
@@ -50,19 +49,17 @@
 %% API
 %%--------------------------------------------------------------------
 %% @doc Start the server
--spec(start_link(MaxLoadAvg, MaxCPUUtil, CallbackMod, Interval) ->
+-spec(start_link(ThresholdLoadAvg, ThresholdCPUUtil, Interval) ->
              {ok,Pid} |
              ignore |
-             {error,Error} when MaxLoadAvg::float(),
-                                MaxCPUUtil::float(),
-                                CallbackMod::module(),
+             {error,Error} when ThresholdLoadAvg::float(),
+                                ThresholdCPUUtil::float(),
                                 Interval::pos_integer(),
                                 Pid::pid(),
                                 Error::{already_started,Pid} | term()).
-start_link(MaxLoadAvg, MaxCPUUtil, CallbackMod, Interval) ->
-    State = #state{max_load_avg  = MaxLoadAvg,
-                   max_cpu_util  = MaxCPUUtil,
-                   callback_mod  = CallbackMod},
+start_link(ThresholdLoadAvg, ThresholdCPUUtil, Interval) ->
+    State = #state{threshold_load_avg = ThresholdLoadAvg,
+                   threshold_cpu_util = ThresholdCPUUtil},
     leo_watchdog:start_link(?MODULE, ?MODULE, State, Interval).
 
 
@@ -81,9 +78,8 @@ stop() ->
              {ok, State} | {{error,Error}, State} when Id::atom(),
                                                        State::#state{},
                                                        Error::any()).
-handle_call(Id, #state{max_load_avg = MaxLoadAvg,
-                       max_cpu_util = MaxCpuUtil,
-                       callback_mod = CallbackMod} = State) ->
+handle_call(Id, #state{threshold_load_avg = ThresholdLoadAvg,
+                       threshold_cpu_util = ThresholdCpuUtil} = State) ->
     try
         AVG_1 = erlang:round(cpu_sup:avg1() / 256 * 1000) / 10,
         AVG_5 = erlang:round(cpu_sup:avg5() / 256 * 1000) / 10,
@@ -93,32 +89,30 @@ handle_call(Id, #state{max_load_avg = MaxLoadAvg,
                        _OtherOS ->
                            0
                    end,
-        CurState = [{load_avg_1, AVG_1},
-                    {load_avg_5, AVG_5},
-                    {cpu_util,   CPU_Util}
-                   ],
-        CurState_1 = #watchdog_state{props = CurState},
-        {Level, CurState_2} =
-            case (MaxLoadAvg * 100 < AVG_1 orelse
-                  MaxLoadAvg * 100 < AVG_5) of
-                true when CPU_Util > MaxCpuUtil ->
-                    {?WD_LEVEL_ERROR,
-                     CurState_1#watchdog_state{state = ?WD_LEVEL_ERROR}};
-                true ->
-                    {?WD_LEVEL_WARN,
-                     CurState_1#watchdog_state{state = ?WD_LEVEL_WARN}};
-                false when CPU_Util > MaxCpuUtil ->
-                    {?WD_LEVEL_WARN,
-                     CurState_1#watchdog_state{state = ?WD_LEVEL_WARN}};
-                false ->
-                    {?WD_LEVEL_SAFE,
-                     CurState_1#watchdog_state{state = ?WD_LEVEL_SAFE}}
-            end,
+        %% Load avg
+        case (ThresholdLoadAvg * 100 < AVG_1 orelse
+              ThresholdLoadAvg * 100 < AVG_5) of
+            true ->
+                elarm:raise(Id, ?WD_ITEM_LOAD_AVG,
+                            [{level, ?WD_LEVEL_ERROR},
+                             {load_avg_1, AVG_1},
+                             {load_avg_5, AVG_5}
+                            ]);
+            false ->
+                elarm:clear(Id, ?WD_ITEM_LOAD_AVG)
+        end,
 
-        %% If level is warning or error,
-        %% nofify the message to the clients
-        ?notify_msg(Id, CallbackMod, Level, CurState_2),
-        catch leo_watchdog_state:put(?MODULE, CurState_2)
+        %% CPU util
+        case (CPU_Util > ThresholdCpuUtil) of
+            true ->
+                elarm:raise(Id, ?WD_ITEM_CPU_UTIL,
+                            [{level, ?WD_LEVEL_ERROR},
+                             {?WD_ITEM_CPU_UTIL, CPU_Util}
+                            ]);
+            false ->
+                elarm:clear(Id, ?WD_ITEM_CPU_UTIL)
+        end,
+        ok
     catch
         _:_ ->
             ok

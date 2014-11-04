@@ -32,7 +32,7 @@
 -include_lib("eunit/include/eunit.hrl").
 
 %% API
--export([start_link/4,
+-export([start_link/3,
          stop/0]).
 
 %% Callback
@@ -40,9 +40,8 @@
          handle_fail/2]).
 
 -record(state, {
-          max_input  = 0  :: pos_integer(),
-          max_output = 0  :: pos_integer(),
-          callback_mod    :: module(),
+          threshold_input  = 0 :: pos_integer(),
+          threshold_output = 0 :: pos_integer(),
           prev_input  = 0 :: pos_integer(),
           prev_output = 0 :: pos_integer(),
           interval = timer:seconds(1) :: pos_integer()
@@ -53,22 +52,19 @@
 %% API
 %%--------------------------------------------------------------------
 %% @doc Start the server
--spec(start_link(MaxInputForInterval, MaxOutputForInterval,
-                 CallbackMod, Interval) ->
+-spec(start_link(ThresholdInputPerSec, ThresholdOutputPerSec, Interval) ->
              {ok,Pid} |
              ignore |
-             {error,Error} when MaxInputForInterval::non_neg_integer(),
-                                MaxOutputForInterval::non_neg_integer(),
-                                CallbackMod::module(),
+             {error,Error} when ThresholdInputPerSec::non_neg_integer(),
+                                ThresholdOutputPerSec::non_neg_integer(),
                                 Interval::pos_integer(),
                                 Pid::pid(),
                                 Error::{already_started,Pid} | term()).
-start_link(MaxInputForInterval, MaxOutputForInterval, CallbackMod, Interval) ->
-    State = #state{max_input    = MaxInputForInterval,
-                   max_output   = MaxOutputForInterval,
-                   callback_mod = CallbackMod,
-                   prev_input   = MaxInputForInterval,
-                   prev_output  = MaxOutputForInterval,
+start_link(ThresholdInputPerSec, ThresholdOutputPerSec, Interval) ->
+    State = #state{threshold_input    = ThresholdInputPerSec,
+                   threshold_output   = ThresholdOutputPerSec,
+                   prev_input   = ThresholdInputPerSec,
+                   prev_output  = ThresholdOutputPerSec,
                    interval     = Interval
                   },
     leo_watchdog:start_link(?MODULE, ?MODULE, State, Interval).
@@ -90,9 +86,8 @@ stop() ->
              {{error,Error}, State} when Id::atom(),
                                          State::#state{},
                                          Error::any()).
-handle_call(Id, #state{max_input    = MaxInput,
-                       max_output   = MaxOutput,
-                       callback_mod = CallbackMod,
+handle_call(Id, #state{threshold_input   = ThresholdInput,
+                       threshold_output  = ThresholdOutput,
                        prev_input   = PrevInput,
                        prev_output  = PrevOutput,
                        interval     = Interval} = State) ->
@@ -101,32 +96,19 @@ handle_call(Id, #state{max_input    = MaxInput,
     CurOutput = leo_misc:get_value('output', RetL, 0),
     DiffInput  = CurInput  - PrevInput,
     DiffOutput = CurOutput - PrevOutput,
-
-    CurState = [{prev_input,  PrevInput},
-                {prev_output, PrevOutput},
-                {cur_input,   CurInput},
-                {cur_output,  CurOutput},
-                {diff_input,  DiffInput},
-                {diff_output, DiffOutput}
-               ],
-    CurState_1 = #watchdog_state{props = CurState},
     CurTotalIO = DiffInput + DiffOutput,
-    ThresholdIO = erlang:round((MaxInput + MaxOutput) * Interval),
+    ThresholdIO = erlang:round((ThresholdInput + ThresholdOutput) * Interval / 1000), 
 
-    {Level, CurState_2} =
-        case (CurTotalIO > ThresholdIO) of
-            true ->
-                {?WD_LEVEL_ERROR,
-                 CurState_1#watchdog_state{state = ?WD_LEVEL_ERROR}};
-            false ->
-                {?WD_LEVEL_SAFE,
-                 CurState_1#watchdog_state{state = ?WD_LEVEL_SAFE}}
-        end,
-
-    %% If level is warning or error,
-    %% nofify the message to the clients
-    ?notify_msg(Id, CallbackMod, Level, CurState_2),
-    catch leo_watchdog_state:put(?MODULE, CurState_2),
+    case (CurTotalIO > ThresholdIO) of
+        true ->
+            elarm:raise(Id, ?WD_ITEM_IO,
+                        [{level, ?WD_LEVEL_ERROR},
+                         {input,  DiffInput},
+                         {output, DiffOutput}
+                        ]);
+        false ->
+            elarm:clear(Id, ?WD_ITEM_IO)
+    end,
     {ok, State#state{prev_input  = CurInput,
                      prev_output = CurOutput}}.
 
