@@ -54,6 +54,7 @@
 -define(DEF_INPUT_PER_SEC,  134217728). %% 128MB
 -define(DEF_OUTPUT_PER_SEC, 134217728). %% 128MB
 -define(DEF_DISK_UTIL,      90.0).
+-define(DEF_IO_WAIT,        90).
 
 -define(env_watchdog_check_interval(App),
         case application:get_env(App, watchdog_check_interval) of
@@ -137,4 +138,11 @@
                 EnvWDMaxDiskUtil;
             _ ->
                 ?DEF_DISK_UTIL
+        end).
+-define(env_watchdog_max_io_wait(App),
+        case application:get_env(App, watchdog_max_io_wait) of
+            {ok, EnvWDMaxIoWait} ->
+                EnvWDMaxIoWait;
+            _ ->
+                ?DEF_IO_WAIT
         end).
