@@ -97,8 +97,6 @@ handle_call(Id, #state{max_load_avg = MaxLoadAvg,
                     {load_avg_5, AVG_5},
                     {cpu_util,   CPU_Util}
                    ],
-        ?debugVal(CurState),
-
         CurState_1 = #watchdog_state{props = CurState},
         {Level, CurState_2} =
             case (MaxLoadAvg * 100 < AVG_1 orelse
