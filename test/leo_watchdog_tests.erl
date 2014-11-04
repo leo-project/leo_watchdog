@@ -28,15 +28,26 @@
 -include("leo_watchdog.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
--export([notify/2]).
+-export([notify/3]).
 
 
-notify(_, State) ->
+notify(_, ?WD_LEVEL_ERROR = Level, State) ->
     error_logger:warning_msg(
       "~p,~p,~p,~p~n",
       [{module, ?MODULE_STRING},
-       {function, "notify/2"},
-       {line, ?LINE}, {body, State}]),
+       {function, "notify/3"},
+       {line, ?LINE}, {body, [{level, Level}, {state, State}]}
+      ]),
+    ok;
+notify(_, ?WD_LEVEL_WARN = Level, State) ->
+    error_logger:warning_msg(
+      "~p,~p,~p,~p~n",
+      [{module, ?MODULE_STRING},
+       {function, "notify/3"},
+       {line, ?LINE}, {body, [{level, Level}, {state, State}]}
+      ]),
+    ok;
+notify(_,_Level,_State) ->
     ok.
 
 -ifdef(EUNIT).
@@ -48,15 +59,18 @@ suite_test_() ->
     {setup,
      fun ( ) ->
              application:start(leo_watchdog),
-             Interval   = 1000,
+             Interval   = timer:seconds(3),
              MaxMemForBin = 1024 * 1024 * 32,
-             MaxLoadAvg = 50,
-             MaxCPUUtil = 10,
-             MaxInput   = 1024,
-             MaxOutput  = 1024,
-             ok = leo_watchdog_sup:start_child(rex, [MaxMemForBin], Interval),
-             ok = leo_watchdog_sup:start_child(cpu, [MaxLoadAvg, MaxCPUUtil, ?MODULE], Interval),
-             ok = leo_watchdog_sup:start_child(io,  [MaxInput, MaxOutput, ?MODULE], Interval),
+             MaxLoadAvg  = 2,
+             MaxCPUUtil  = 30,
+             MaxInput    = 64,
+             MaxOutput   = 64,
+             MaxDiskUtil = 30,
+             MaxIoWait   = 30,
+             ok = leo_watchdog_sup:start_child(rex,  [MaxMemForBin], Interval),
+             ok = leo_watchdog_sup:start_child(cpu,  [MaxLoadAvg, MaxCPUUtil, ?MODULE], Interval),
+             ok = leo_watchdog_sup:start_child(io,   [MaxInput, MaxOutput, ?MODULE], Interval),
+             ok = leo_watchdog_sup:start_child(disk, [["/"], MaxDiskUtil, MaxIoWait, ?MODULE], Interval),
              ok
      end,
      fun (_) ->
@@ -80,8 +94,8 @@ suite() ->
     State_IO  = leo_watchdog_state:get('leo_watchdog_io'),
     ?debugVal({State_CPU, State_IO}),
 
-    NotSafeItems_1 = leo_watchdog_state:find_not_safe_items(),
-    ?debugVal(NotSafeItems_1),
+    NotSafeItems = leo_watchdog_state:find_not_safe_items(),
+    ?debugVal(NotSafeItems),
     ok.
 
 %% @private
@@ -103,10 +117,8 @@ send_message(NumOfMsgs, Pid) ->
         0 ->
             State_CPU = leo_watchdog_state:get('leo_watchdog_cpu'),
             State_IO  = leo_watchdog_state:get('leo_watchdog_io'),
-            ?debugVal({State_CPU, State_IO}),
-
             NotSafeItems = leo_watchdog_state:find_not_safe_items(),
-            ?debugVal(NotSafeItems),
+            ?debugVal({State_CPU, State_IO, NotSafeItems}),
             timer:sleep(10);
         _ ->
             void

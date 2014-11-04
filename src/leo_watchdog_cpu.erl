@@ -45,6 +45,7 @@
           callback_mod       :: module()
          }).
 
+
 %%--------------------------------------------------------------------
 %% API
 %%--------------------------------------------------------------------
@@ -84,32 +85,39 @@ handle_call(Id, #state{max_load_avg = MaxLoadAvg,
                        max_cpu_util = MaxCpuUtil,
                        callback_mod = CallbackMod} = State) ->
     try
-        AVG_1    = erlang:round(cpu_sup:avg1() / 256 * 1000) / 10,
-        AVG_5    = erlang:round(cpu_sup:avg5() / 256 * 1000) / 10,
-        CPU_Util = erlang:round(cpu_sup:util() * 10) / 10,
-
+        AVG_1 = erlang:round(cpu_sup:avg1() / 256 * 1000) / 10,
+        AVG_5 = erlang:round(cpu_sup:avg5() / 256 * 1000) / 10,
+        CPU_Util = case os:type() of
+                       {unix, linux} ->
+                           erlang:round(cpu_sup:util() * 10) / 10;
+                       _OtherOS ->
+                           0
+                   end,
         CurState = [{load_avg_1, AVG_1},
                     {load_avg_5, AVG_5},
                     {cpu_util,   CPU_Util}
                    ],
         CurState_1 = #watchdog_state{props = CurState},
-        CurState_2 =
-            case (MaxLoadAvg < AVG_1 orelse
-                  MaxLoadAvg < AVG_5) of
+        {Level, CurState_2} =
+            case (MaxLoadAvg * 100 < AVG_1 orelse
+                  MaxLoadAvg * 100 < AVG_5) of
                 true when CPU_Util > MaxCpuUtil ->
-                    %% Nofify the message to the clients
-                    case CallbackMod of
-                        undefined ->
-                            ok;
-                        _ ->
-                            erlang:apply(CallbackMod, notify, [Id, CurState])
-                    end,
-                    CurState_1#watchdog_state{state = ?WD_STATE_ERROR};
+                    {?WD_LEVEL_ERROR,
+                     CurState_1#watchdog_state{state = ?WD_LEVEL_ERROR}};
                 true ->
-                    CurState_1#watchdog_state{state = ?WD_STATE_WARN};
+                    {?WD_LEVEL_WARN,
+                     CurState_1#watchdog_state{state = ?WD_LEVEL_WARN}};
+                false when CPU_Util > MaxCpuUtil ->
+                    {?WD_LEVEL_WARN,
+                     CurState_1#watchdog_state{state = ?WD_LEVEL_WARN}};
                 false ->
-                    CurState_1#watchdog_state{state = ?WD_STATE_SAFE}
+                    {?WD_LEVEL_SAFE,
+                     CurState_1#watchdog_state{state = ?WD_LEVEL_SAFE}}
             end,
+
+        %% If level is warning or error,
+        %% nofify the message to the clients
+        ?notify_msg(Id, CallbackMod, Level, CurState_2),
         catch leo_watchdog_state:put(?MODULE, CurState_2)
     catch
         _:_ ->

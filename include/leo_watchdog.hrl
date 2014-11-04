@@ -28,24 +28,33 @@
 
 -type(watchdog_id() :: atom()).
 
--define(WD_STATE_SAFE,  'safe').
--define(WD_STATE_WARN,  'warn').
--define(WD_STATE_ERROR, 'error').
--type(watchdog_state() :: ?WD_STATE_SAFE |
-                          ?WD_STATE_WARN |
-                          ?WD_STATE_ERROR).
+-define(WD_LEVEL_SAFE,  'safe').
+-define(WD_LEVEL_WARN,  'warn').
+-define(WD_LEVEL_ERROR, 'error').
+-type(watchdog_level() :: ?WD_LEVEL_SAFE |
+                          ?WD_LEVEL_WARN |
+                          ?WD_LEVEL_ERROR).
 -record(watchdog_state, {
-          state = ?WD_STATE_SAFE :: watchdog_state(),
+          state = ?WD_LEVEL_SAFE :: watchdog_level(),
           props = [] :: [{atom(), any()}]
          }).
+
+-define(notify_msg(_Id, _CallbackMod, _Level, _State),
+        case _CallbackMod of
+            undefined ->
+                ok;
+            _ ->
+                catch erlang:apply(_CallbackMod, notify, [_Id, _Level, _State])
+        end).
 
 %% defalut constants
 -define(DEF_MEM_CAPACITY, 33554432).
 -define(DEF_CPU_LOAD_AVG, 100.0).
 -define(DEF_CPU_UTIL,      90.0).
--define(DEF_INPUT_FOR_INTERVAL,  134217728). %% 128MB
--define(DEF_OUTPUT_FOR_INTERVAL, 134217728). %% 128MB
+-define(DEF_INPUT_PER_SEC,  134217728). %% 128MB
+-define(DEF_OUTPUT_PER_SEC, 134217728). %% 128MB
 -define(DEF_DISK_UTIL,      90.0).
+-define(DEF_IO_WAIT,        90).
 
 -define(env_watchdog_check_interval(App),
         case application:get_env(App, watchdog_check_interval) of
@@ -101,19 +110,27 @@
             _ ->
                 true
         end).
--define(env_watchdog_max_input_for_interval(App),
-        case application:get_env(App, watchdog_max_input_for_interval) of
-            {ok, EnvWDMaxInputForInterval} ->
-                EnvWDMaxInputForInterval;
+-define(env_watchdog_max_input_per_sec(App),
+        case application:get_env(App, watchdog_max_input_per_sec) of
+            {ok, EnvWDMaxInputPerSec} ->
+                EnvWDMaxInputPerSec;
             _ ->
-                ?DEF_INPUT_FOR_INTERVAL
+                ?DEF_INPUT_PER_SEC
         end).
--define(env_watchdog_max_output_for_interval(App),
-        case application:get_env(App, watchdog_max_output_for_interval) of
-            {ok, EnvWDMaxOutputForInterval} ->
-                EnvWDMaxOutputForInterval;
+-define(env_watchdog_max_output_per_sec(App),
+        case application:get_env(App, watchdog_max_output_per_sec) of
+            {ok, EnvWDMaxOutputPerSec} ->
+                EnvWDMaxOutputPerSec;
             _ ->
-                ?DEF_OUTPUT_FOR_INTERVAL
+                ?DEF_OUTPUT_PER_SEC
+        end).
+
+-define(env_watchdog_disk_enabled(App),
+        case application:get_env(App, watchdog_disk_enabled) of
+            {ok, EnvWDDiskEnabled} ->
+                EnvWDDiskEnabled;
+            _ ->
+                true
         end).
 -define(env_watchdog_max_disk_util(App),
         case application:get_env(App, watchdog_max_disk_util) of
@@ -121,4 +138,11 @@
                 EnvWDMaxDiskUtil;
             _ ->
                 ?DEF_DISK_UTIL
+        end).
+-define(env_watchdog_max_io_wait(App),
+        case application:get_env(App, watchdog_max_io_wait) of
+            {ok, EnvWDMaxIoWait} ->
+                EnvWDMaxIoWait;
+            _ ->
+                ?DEF_IO_WAIT
         end).
