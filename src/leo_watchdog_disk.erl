@@ -277,7 +277,7 @@ io_wait_1({unix, linux}) ->
     list_to_integer(
       erlang:hd(
         string:tokens(
-          os:cmd("vmstat | tail -n 1 | awk '{print $16}'"), "\n")));
+          os:cmd("vmstat 1 2 | tail -n 1 | awk '{print $16}'"), "\n")));
 %% @TODO solaris/smartos
 %% @TODO freebsd
 io_wait_1(_) ->
