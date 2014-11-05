@@ -33,7 +33,8 @@
 
 %% External API
 -export([start_link/0,
-         start_child/3
+         start_child/3,
+         start_subscriber/3
         ]).
 
 %% Callbacks
@@ -97,6 +98,31 @@ child_spec(disk, Args, Interval) ->
      [leo_watchdog_disk]}.
 
 
+%% @doc Creates the gen_server process as part of a supervision tree
+%%      <pre>callback_mod need to implement "leo_notify_behaviour"<pre>
+%% @end
+-spec(start_subscriber(SubId, FilterSrcL, CallbackMod) ->
+             ok | no_return() when SubId::atom(),
+                                   FilterSrcL::[any()],
+                                   CallbackMod::module()).
+start_subscriber(SubId, FilterSrcL, CallbackMod) ->
+    FilterSrcL_1 = [{src, Filter} || Filter <- FilterSrcL],
+    Spec = {SubId,
+            {leo_watchdog_sub, start_link, [SubId, FilterSrcL_1, CallbackMod]},
+            permanent,
+            2000,
+            worker,
+            [leo_watchdog_sub]},
+    case supervisor:start_child(?MODULE, Spec) of
+        {ok, _Pid} ->
+            ok;
+        Cause ->
+            {error, Cause}
+    end.
+
+%% @private
+
+
 %% ---------------------------------------------------------------------
 %% Callbacks
 %% ---------------------------------------------------------------------
@@ -104,4 +130,3 @@ child_spec(disk, Args, Interval) ->
 %% @end
 init([]) ->
     {ok, {{one_for_one, 5, 60}, []}}.
-

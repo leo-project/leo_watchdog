@@ -71,6 +71,18 @@
 -define(WD_ITEM_IOWAIT,    'iowait').
 
 
+%% macro - elarm#alarm{} to leo_watchdog#watchdog_alarm{}
+-define(to_watchdog_alarm(_Alarm),
+        begin
+            #alarm{alarm_id = _WatchdogId,
+                   additional_information = _Info,
+                   event_time = _EventTime} = _Alarm,
+            #watchdog_alarm{id = _WatchdogId,
+                            state = _Info,
+                            event_time = _EventTime}
+        end).
+
+
 %% ---------------------------------------------------------------------
 %% REX
 %% ---------------------------------------------------------------------
