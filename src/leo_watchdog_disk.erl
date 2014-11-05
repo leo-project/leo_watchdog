@@ -54,10 +54,11 @@
 
 -record(disk_data, {
           filesystem = [] :: string(),
-          blocks = 0 :: non_neg_integer(),
-          used = 0   :: non_neg_integer(),
-          available  :: non_neg_integer(),
-          use_percentage = [] :: string(),
+          blocks = 0      :: non_neg_integer(),
+          used = 0        :: non_neg_integer(),
+          available = 0   :: non_neg_integer(),
+          use_percentage = 0 :: non_neg_integer(),
+          use_percentage_str = [] :: string(),
           mounted_on = [] :: string()
          }).
 
@@ -108,7 +109,7 @@ get_disk_data({unix,darwin}, RetL) ->
                            blocks    = list_to_integer(Blocks),
                            used      = list_to_integer(Used),
                            available = list_to_integer(Available),
-                           use_percentage = UsePer,
+                           use_percentage_str = UsePer,
                            mounted_on = MountedOn}
         end,
     [ F(Row) || Row <- RetL ];
@@ -119,7 +120,7 @@ get_disk_data({unix,linux}, RetL) ->
                            blocks    = list_to_integer(Blocks),
                            used      = list_to_integer(Used),
                            available = list_to_integer(Available),
-                           use_percentage = UsePer,
+                           use_percentage_str = UsePer,
                            mounted_on = MountedOn}
         end,
     [ F(Row) || Row <- RetL ];

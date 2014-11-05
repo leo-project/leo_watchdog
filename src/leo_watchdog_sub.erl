@@ -44,7 +44,7 @@
 -record(state, {
           id :: atom(),
           filter :: [atom()]|[{atom(), any()}],
-          callback_mod :: module(),
+          callback_mod :: module()|undefined,
           elarm_ref    :: reference()
          }).
 
@@ -55,7 +55,7 @@
 %% @doc Start the server
 -spec(start_link(Id, CallbackMod) ->
              {ok,Pid} | ignore | {error,Error} when Id::atom(),
-                                                    CallbackMod::module(),
+                                                    CallbackMod::module()|undefined,
                                                     Pid::pid(),
                                                     Error::{already_started,Pid} | term()).
 start_link(Id, CallbackMod) ->
@@ -64,7 +64,7 @@ start_link(Id, CallbackMod) ->
 -spec(start_link(Id, Filter, CallbackMod) ->
              {ok,Pid} | ignore | {error,Error} when Id::atom(),
                                                     Filter::[atom()]|[{atom(),any()}],
-                                                    CallbackMod::module(),
+                                                    CallbackMod::module()|undefined,
                                                     Pid::pid(),
                                                     Error::{already_started,Pid} | term()).
 start_link(Id, Filter, CallbackMod) ->
