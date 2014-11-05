@@ -134,8 +134,13 @@
 %% @doc Watchdog - cpu - threshold cpu load avg
 -define(env_wd_threshold_cpu_load_avg(App),
         case application:get_env(App, wd_threshold_cpu_load_avg) of
-            {ok, EnvWDThresholdCpuLoadAvg} ->
+            {ok, EnvWDThresholdCpuLoadAvg} is_number(EnvWDThresholdCpuLoadAvg) ->
                 EnvWDThresholdCpuLoadAvg;
+            {ok, EnvWDThresholdCpuLoadAvg} ->
+                case string:str(EnvWDThresholdCpuLoadAvg, ".") of
+                    0 -> list_to_integer(EnvWDThresholdCpuLoadAvg);
+                    _ -> list_to_float(EnvWDThresholdCpuLoadAvg)
+                end;
             _ ->
                 ?DEF_CPU_LOAD_AVG
         end).
