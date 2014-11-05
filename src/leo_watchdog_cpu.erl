@@ -94,10 +94,12 @@ handle_call(Id, #state{threshold_load_avg = ThresholdLoadAvg,
               ThresholdLoadAvg * 100 < AVG_5) of
             true ->
                 elarm:raise(Id, ?WD_ITEM_LOAD_AVG,
-                            [{level, ?WD_LEVEL_ERROR},
-                             {load_avg_1, AVG_1},
-                             {load_avg_5, AVG_5}
-                            ]);
+                            #watchdog_state{id = Id,
+                                            level = ?WD_LEVEL_ERROR,
+                                            src   = ?WD_ITEM_LOAD_AVG,
+                                            props = [{load_avg_1, AVG_1},
+                                                     {load_avg_5, AVG_5}
+                                                    ]});
             false ->
                 elarm:clear(Id, ?WD_ITEM_LOAD_AVG)
         end,
@@ -106,9 +108,11 @@ handle_call(Id, #state{threshold_load_avg = ThresholdLoadAvg,
         case (CPU_Util > ThresholdCpuUtil) of
             true ->
                 elarm:raise(Id, ?WD_ITEM_CPU_UTIL,
-                            [{level, ?WD_LEVEL_ERROR},
-                             {?WD_ITEM_CPU_UTIL, CPU_Util}
-                            ]);
+                            #watchdog_state{id = Id,
+                                            level = ?WD_LEVEL_ERROR,
+                                            src   = ?WD_ITEM_CPU_UTIL,
+                                            props = [{?WD_ITEM_CPU_UTIL, CPU_Util}
+                                                    ]});
             false ->
                 elarm:clear(Id, ?WD_ITEM_CPU_UTIL)
         end,

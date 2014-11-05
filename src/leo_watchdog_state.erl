@@ -40,7 +40,7 @@
 %%--------------------------------------------------------------------
 %% @doc Retrieve the current status by id
 -spec(find_by_id(WatchdogId) ->
-             ok when WatchdogId::atom()).
+             ok | not_found when WatchdogId::atom()).
 find_by_id(WatchdogId) ->
     case elarm:get_alarms() of
         {ok, []} ->
@@ -52,7 +52,8 @@ find_by_id(WatchdogId) ->
 find_by_id_1([],_WatchdogId, Acc) ->
     {ok, Acc};
 find_by_id_1([#alarm{alarm_id = WatchdogId} = Alarm|Rest], WatchdogId, Acc) ->
-    find_by_id_1(Rest, WatchdogId, [Alarm|Acc]);
+    WatchdogAlarm = to_watchdog_alarm(Alarm),
+    find_by_id_1(Rest, WatchdogId, [WatchdogAlarm|Acc]);
 find_by_id_1([_|Rest], WatchdogId, Acc) ->
     find_by_id_1(Rest, WatchdogId, Acc).
 
@@ -66,5 +67,17 @@ find_not_safe_items() ->
         {ok, []} ->
             not_found;
         {ok, Items} ->
-            {ok, Items}
+            Items_1 = [to_watchdog_alarm(Alarm) || Alarm <- Items],
+            {ok, Items_1}
     end.
+
+
+%%--------------------------------------------------------------------
+%% Innternal Funcitons
+%%--------------------------------------------------------------------
+to_watchdog_alarm(#alarm{alarm_id = WatchdogId,
+                         additional_information = Info,
+                         event_time = EventTime}) ->
+    #watchdog_alarm{id = WatchdogId,
+                    state = Info,
+                    event_time = EventTime}.

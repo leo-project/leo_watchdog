@@ -97,15 +97,21 @@ handle_call(Id, #state{threshold_input   = ThresholdInput,
     DiffInput  = CurInput  - PrevInput,
     DiffOutput = CurOutput - PrevOutput,
     CurTotalIO = DiffInput + DiffOutput,
-    ThresholdIO = erlang:round((ThresholdInput + ThresholdOutput) * Interval / 1000), 
+    ThresholdIO = erlang:round((ThresholdInput + ThresholdOutput) * Interval / 1000),
 
     case (CurTotalIO > ThresholdIO) of
         true ->
             elarm:raise(Id, ?WD_ITEM_IO,
-                        [{level, ?WD_LEVEL_ERROR},
-                         {input,  DiffInput},
-                         {output, DiffOutput}
-                        ]);
+                        #watchdog_state{id = Id,
+                                        level = ?WD_LEVEL_ERROR,
+                                        src   = ?WD_ITEM_IO,
+                                        props = [{input,  DiffInput},
+                                                 {output, DiffOutput},
+                                                 {prev_input,  PrevInput},
+                                                 {prev_output, PrevOutput},
+                                                 {cur_input,   CurInput},
+                                                 {cur_output,  CurOutput}
+                                                ]});
         false ->
             elarm:clear(Id, ?WD_ITEM_IO)
     end,

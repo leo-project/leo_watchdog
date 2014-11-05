@@ -67,7 +67,7 @@ suite() ->
                         loop(NumOfMsgs)
                 end),
     send_message(NumOfMsgs, Pid),
-    ?debugVal(elarm:get_alarms()),
+    ?debugVal(leo_watchdog_state:find_not_safe_items()),
     ok.
 
 %% @private
@@ -92,7 +92,7 @@ send_message(NumOfMsgs, Pid) ->
             ?debugVal(leo_watchdog_state:find_by_id('leo_watchdog_cpu')),
             ?debugVal(leo_watchdog_state:find_by_id('leo_watchdog_io')),
             ?debugVal(leo_watchdog_state:find_by_id('leo_watchdog_disk')),
-            ?debugVal(elarm:get_alarms()),
+            ?debugVal(leo_watchdog_state:find_not_safe_items()),
             timer:sleep(10);
         _ ->
             void

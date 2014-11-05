@@ -184,9 +184,11 @@ check(Id, [], State, Acc) ->
                       elarm:clear(Id, {?WD_ITEM_DISK_UTIL, M});
                   _ ->
                       elarm:raise(Id, {?WD_ITEM_DISK_UTIL, M},
-                                  [{level, L},
-                                   {?WD_ITEM_DISK_UTIL, D}
-                                  ])
+                                  #watchdog_state{id = Id,
+                                                  level = L,
+                                                  src   = M,
+                                                  props = [{?WD_ITEM_DISK_UTIL, D}
+                                                          ]})
               end
       end, Acc),
 
@@ -197,9 +199,11 @@ check(Id, [], State, Acc) ->
             elarm:clear(Id, ?WD_ITEM_IOWAIT);
         _ ->
             elarm:raise(Id, ?WD_ITEM_IOWAIT,
-                        [{level, IoWaitLevel},
-                         {?WD_ITEM_IOWAIT, IoWait}
-                        ])
+                        #watchdog_state{id = Id,
+                                        level = IoWaitLevel,
+                                        src   = ?WD_ITEM_IOWAIT,
+                                        props = [{?WD_ITEM_IOWAIT, IoWait}
+                                                ]})
     end,
     ok;
 check(Id, [Path|Rest], #state{threshold_disk_util = ThresholdDiskUtil} = State, Acc) ->

@@ -37,19 +37,22 @@
                           ?WD_LEVEL_ERROR |
                           ?WD_LEVEL_CRITICAL).
 
+-type(watchdog_src() :: string()|
+                        atom()|
+                        term()).
+
 -record(watchdog_state, {
-          state = ?WD_LEVEL_SAFE :: watchdog_level(),
+          id :: watchdog_id(),
+          level = ?WD_LEVEL_SAFE :: non_neg_integer(),
+          src :: watchdog_src(),
           props = [] :: [{atom(), any()}]
          }).
 
--define(notify_msg(_Id, _CallbackMod, _Level, _State),
-        case _CallbackMod of
-            undefined ->
-                ok;
-            _ ->
-                catch erlang:apply(_CallbackMod, notify, [_Id, _Level, _State])
-        end).
-
+-record(watchdog_alarm, {
+          id :: watchdog_id(),
+          state :: #watchdog_state{},
+          event_time :: tuple()
+         }).
 
 %% defalut constants
 -define(DEF_MEM_CAPACITY, 33554432).
