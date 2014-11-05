@@ -133,22 +133,6 @@ get_disk_data(_,_) ->
 %% Callback
 %%--------------------------------------------------------------------
 %% @dog Call execution of the watchdog
-%% <pre>
-%% Stored state of format:
-%% [{level,error},
-%%  {state, [{disk_util, [[{level, error},
-%%                         {disk_data,
-%%                           [{filesystem, "/dev/mapper/ubuntu--vg-root"},
-%%                            {blocks, 114477656},
-%%                            {used, 62649652},
-%%                            {available, 45989772},
-%%                            {use_percentage, 60},
-%%                            {mounted_on, "/"}
-%%                           ]
-%%                         }]]},
-%%           {io_wait, 0}]
-%%  }]
-%% </pre>
 -spec(handle_call(Id, State) ->
              {ok, State} | {{error,Error}, State} when Id::atom(),
                                                        State::#state{},
