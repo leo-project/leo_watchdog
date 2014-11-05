@@ -28,28 +28,6 @@
 -include("leo_watchdog.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
--export([notify/3]).
-
-
-notify(_, ?WD_LEVEL_ERROR = Level, State) ->
-    error_logger:warning_msg(
-      "~p,~p,~p,~p~n",
-      [{module, ?MODULE_STRING},
-       {function, "notify/3"},
-       {line, ?LINE}, {body, [{level, Level}, {state, State}]}
-      ]),
-    ok;
-notify(_, ?WD_LEVEL_WARN = Level, State) ->
-    error_logger:warning_msg(
-      "~p,~p,~p,~p~n",
-      [{module, ?MODULE_STRING},
-       {function, "notify/3"},
-       {line, ?LINE}, {body, [{level, Level}, {state, State}]}
-      ]),
-    ok;
-notify(_,_Level,_State) ->
-    ok.
-
 -ifdef(EUNIT).
 
 %%======================================================================
@@ -68,9 +46,9 @@ suite_test_() ->
              MaxDiskUtil = 30,
              MaxIoWait   = 30,
              ok = leo_watchdog_sup:start_child(rex,  [MaxMemForBin], Interval),
-             ok = leo_watchdog_sup:start_child(cpu,  [MaxLoadAvg, MaxCPUUtil, ?MODULE], Interval),
-             ok = leo_watchdog_sup:start_child(io,   [MaxInput, MaxOutput, ?MODULE], Interval),
-             ok = leo_watchdog_sup:start_child(disk, [["/"], MaxDiskUtil, MaxIoWait, ?MODULE], Interval),
+             ok = leo_watchdog_sup:start_child(cpu,  [MaxLoadAvg, MaxCPUUtil], Interval),
+             ok = leo_watchdog_sup:start_child(io,   [MaxInput, MaxOutput], Interval),
+             ok = leo_watchdog_sup:start_child(disk, [["/"], MaxDiskUtil, MaxIoWait], Interval),
              ok
      end,
      fun (_) ->
@@ -89,13 +67,7 @@ suite() ->
                         loop(NumOfMsgs)
                 end),
     send_message(NumOfMsgs, Pid),
-
-    State_CPU = leo_watchdog_state:get('leo_watchdog_cpu'),
-    State_IO  = leo_watchdog_state:get('leo_watchdog_io'),
-    ?debugVal({State_CPU, State_IO}),
-
-    NotSafeItems = leo_watchdog_state:find_not_safe_items(),
-    ?debugVal(NotSafeItems),
+    ?debugVal(leo_watchdog_state:find_not_safe_items()),
     ok.
 
 %% @private
@@ -115,10 +87,12 @@ send_message(0,_Pid) ->
 send_message(NumOfMsgs, Pid) ->
     case (NumOfMsgs rem 100000) of
         0 ->
-            State_CPU = leo_watchdog_state:get('leo_watchdog_cpu'),
-            State_IO  = leo_watchdog_state:get('leo_watchdog_io'),
-            NotSafeItems = leo_watchdog_state:find_not_safe_items(),
-            ?debugVal({State_CPU, State_IO, NotSafeItems}),
+            %% NotSafeItems = leo_watchdog_state:find_not_safe_items(),
+            %% ?debugVal({State_CPU, State_IO, NotSafeItems}),
+            ?debugVal(leo_watchdog_state:find_by_id('leo_watchdog_cpu')),
+            ?debugVal(leo_watchdog_state:find_by_id('leo_watchdog_io')),
+            ?debugVal(leo_watchdog_state:find_by_id('leo_watchdog_disk')),
+            ?debugVal(leo_watchdog_state:find_not_safe_items()),
             timer:sleep(10);
         _ ->
             void
