@@ -60,15 +60,28 @@
 -define(DEF_CPU_UTIL,      90.0).
 -define(DEF_INPUT_PER_SEC,  134217728). %% 128MB
 -define(DEF_OUTPUT_PER_SEC, 134217728). %% 128MB
--define(DEF_DISK_UTIL,      90.0).
--define(DEF_IO_WAIT,        90).
+-define(DEF_DISK_USE,       85).
+-define(DEF_DISK_UTIL,      95.0).
+
 
 -define(WD_WARN_USE_PERCENTAGE, 80).
 -define(WD_ITEM_LOAD_AVG,  'load_avg').
 -define(WD_ITEM_CPU_UTIL,  'cpu_util').
 -define(WD_ITEM_IO,        'io_input').
+-define(WD_ITEM_DISK_USE,  'disk_use_per').
 -define(WD_ITEM_DISK_UTIL, 'disk_util').
--define(WD_ITEM_IOWAIT,    'iowait').
+
+
+%% macro - elarm#alarm{} to leo_watchdog#watchdog_alarm{}
+-define(to_watchdog_alarm(_Alarm),
+        begin
+            #alarm{alarm_id = _WatchdogId,
+                   additional_information = _Info,
+                   event_time = _EventTime} = _Alarm,
+            #watchdog_alarm{id = _WatchdogId,
+                            state = _Info,
+                            event_time = _EventTime}
+        end).
 
 
 %% ---------------------------------------------------------------------
@@ -122,8 +135,13 @@
 %% @doc Watchdog - cpu - threshold cpu load avg
 -define(env_wd_threshold_cpu_load_avg(App),
         case application:get_env(App, wd_threshold_cpu_load_avg) of
-            {ok, EnvWDThresholdCpuLoadAvg} ->
+            {ok, EnvWDThresholdCpuLoadAvg} when is_number(EnvWDThresholdCpuLoadAvg) ->
                 EnvWDThresholdCpuLoadAvg;
+            {ok, EnvWDThresholdCpuLoadAvg} ->
+                case string:str(EnvWDThresholdCpuLoadAvg, ".") of
+                    0 -> list_to_integer(EnvWDThresholdCpuLoadAvg);
+                    _ -> list_to_float(EnvWDThresholdCpuLoadAvg)
+                end;
             _ ->
                 ?DEF_CPU_LOAD_AVG
         end).
@@ -192,6 +210,14 @@
             _ ->
                 ?DEF_WATCH_INTERVAL
         end).
+%% @doc Watchdog - disk - threshold iowait
+-define(env_wd_threshold_disk_use(App),
+        case application:get_env(App, wd_threshold_disk_use) of
+            {ok, EnvWDThresholdIoWait} ->
+                EnvWDThresholdIoWait;
+            _ ->
+                ?DEF_DISK_USE
+        end).
 %% @doc Watchdog - disk - threshold disk utilization
 -define(env_wd_threshold_disk_util(App),
         case application:get_env(App, wd_threshold_disk_util) of
@@ -199,12 +225,4 @@
                 EnvWDThresholdDiskUtil;
             _ ->
                 ?DEF_DISK_UTIL
-        end).
-%% @doc Watchdog - disk - threshold iowait
--define(env_wd_threshold_io_wait(App),
-        case application:get_env(App, wd_threshold_io_wait) of
-            {ok, EnvWDThresholdIoWait} ->
-                EnvWDThresholdIoWait;
-            _ ->
-                ?DEF_IO_WAIT
         end).

@@ -26,5 +26,5 @@
 
 -include("leo_watchdog.hrl").
 
--callback(notify(Id::atom(), Level::non_neg_integer(), State::[{atom(), any()}]) ->
+-callback(notify(Id::atom(), Alarm::term()) ->
                  ok | {error, any()}).

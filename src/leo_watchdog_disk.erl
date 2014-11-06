@@ -39,7 +39,7 @@
 -export([handle_call/2,
          handle_fail/2]).
 
--export([disk_util/2,
+-export([disk_use/2,
          get_disk_data/0
         ]).
 
@@ -48,16 +48,17 @@
 
 -record(state, {
           target_paths = [] :: [string()],
-          threshold_disk_util = 0.0 :: float(),
-          threshold_iowait    = 0   :: non_neg_integer()
+          threshold_disk_use  = 0   :: non_neg_integer(),
+          threshold_disk_util = 0.0 :: float()
          }).
 
 -record(disk_data, {
           filesystem = [] :: string(),
-          blocks = 0 :: non_neg_integer(),
-          used = 0   :: non_neg_integer(),
-          available  :: non_neg_integer(),
-          use_percentage = [] :: string(),
+          blocks = 0      :: non_neg_integer(),
+          used = 0        :: non_neg_integer(),
+          available = 0   :: non_neg_integer(),
+          use_percentage = 0 :: non_neg_integer(),
+          use_percentage_str = [] :: string(),
           mounted_on = [] :: string()
          }).
 
@@ -66,18 +67,18 @@
 %% API
 %%--------------------------------------------------------------------
 %% @doc Start the server
--spec(start_link(TargetPaths, ThresholdDiskUtil, ThresholdIoWait, IntervalTime) ->
+-spec(start_link(TargetPaths, ThresholdDiskUse, ThresholdDiskUtil, IntervalTime) ->
              {ok,Pid} | ignore | {error,Error} when TargetPaths::[string()],
+                                                    ThresholdDiskUse::non_neg_integer(),
                                                     ThresholdDiskUtil::float(),
-                                                    ThresholdIoWait::non_neg_integer(),
                                                     IntervalTime::pos_integer(),
                                                     Pid::pid(),
                                                     Error::{already_started,Pid} | term()).
-start_link(TargetPaths, ThresholdDiskUtil, ThresholdIoWait, IntervalTime) ->
+start_link(TargetPaths, ThresholdDiskUse, ThresholdDiskUtil, IntervalTime) ->
     leo_watchdog:start_link(?MODULE, ?MODULE,
                             #state{target_paths  = TargetPaths,
-                                   threshold_disk_util = ThresholdDiskUtil,
-                                   threshold_iowait   = ThresholdIoWait}, IntervalTime).
+                                   threshold_disk_use  = ThresholdDiskUse,
+                                   threshold_disk_util = ThresholdDiskUtil}, IntervalTime).
 
 
 %% @doc Stop the server
@@ -108,7 +109,7 @@ get_disk_data({unix,darwin}, RetL) ->
                            blocks    = list_to_integer(Blocks),
                            used      = list_to_integer(Used),
                            available = list_to_integer(Available),
-                           use_percentage = UsePer,
+                           use_percentage_str = UsePer,
                            mounted_on = MountedOn}
         end,
     [ F(Row) || Row <- RetL ];
@@ -119,7 +120,7 @@ get_disk_data({unix,linux}, RetL) ->
                            blocks    = list_to_integer(Blocks),
                            used      = list_to_integer(Used),
                            available = list_to_integer(Available),
-                           use_percentage = UsePer,
+                           use_percentage_str = UsePer,
                            mounted_on = MountedOn}
         end,
     [ F(Row) || Row <- RetL ];
@@ -138,7 +139,9 @@ get_disk_data(_,_) ->
                                                        State::#state{},
                                                        Error::any()).
 handle_call(Id, #state{target_paths  = TargetPaths} = State) ->
-    ok = check(Id, TargetPaths, State, []),
+    spawn(fun() ->
+                  ok = check(Id, TargetPaths, State, [])
+          end),
     {ok, State}.
 
 
@@ -157,7 +160,7 @@ handle_fail(_Id,_Cause) ->
 %% @doc Check disk-related items
 %% @private
 check(Id, [], State, Acc) ->
-    %% Disk util
+    %% Summarize result of disk use%
     lists:foreach(
       fun(DiskData) ->
               L = leo_misc:get_value(level, DiskData),
@@ -165,39 +168,40 @@ check(Id, [], State, Acc) ->
               M = leo_misc:get_value(mounted_on, D),
               case L of
                   ?WD_LEVEL_SAFE->
-                      elarm:clear(Id, {?WD_ITEM_DISK_UTIL, M});
+                      elarm:clear(Id, {?WD_ITEM_DISK_USE, M});
                   _ ->
-                      elarm:raise(Id, {?WD_ITEM_DISK_UTIL, M},
+                      elarm:raise(Id, {?WD_ITEM_DISK_USE, M},
                                   #watchdog_state{id = Id,
                                                   level = L,
                                                   src   = M,
-                                                  props = [{?WD_ITEM_DISK_UTIL, D}
+                                                  props = [{?WD_ITEM_DISK_USE, D}
                                                           ]})
               end
       end, Acc),
 
-    %% iowait
-    {IoWaitLevel, IoWait} = io_wait(State),
-    case IoWaitLevel of
+    %% Check disk-util
+    {DiskUtilLevel, DiskUtil} = disk_util(State),
+    case DiskUtilLevel of
         ?WD_LEVEL_SAFE->
-            elarm:clear(Id, ?WD_ITEM_IOWAIT);
+            elarm:clear(Id, ?WD_ITEM_DISK_UTIL);
         _ ->
-            elarm:raise(Id, ?WD_ITEM_IOWAIT,
+            elarm:raise(Id, ?WD_ITEM_DISK_UTIL,
                         #watchdog_state{id = Id,
-                                        level = IoWaitLevel,
-                                        src   = ?WD_ITEM_IOWAIT,
-                                        props = [{?WD_ITEM_IOWAIT, IoWait}
+                                        level = DiskUtilLevel,
+                                        src   = ?WD_ITEM_DISK_UTIL,
+                                        props = [{?WD_ITEM_DISK_UTIL, DiskUtil}
                                                 ]})
     end,
     ok;
-check(Id, [Path|Rest], #state{threshold_disk_util = ThresholdDiskUtil} = State, Acc) ->
+check(Id, [Path|Rest], #state{threshold_disk_use = ThresholdDiskUse} = State, Acc) ->
     Acc_1 = case get_disk_data() of
                 [] ->
                     Acc;
                 DiskData ->
-                    DiskData_1 = disk_util(string:tokens(Path, "/"), DiskData),
+                    %% Check disk use% of a target volume
+                    DiskData_1 = disk_use(string:tokens(Path, "/"), DiskData),
                     UsePercentage = DiskData_1#disk_data.use_percentage,
-                    Level = case UsePercentage > ThresholdDiskUtil of
+                    Level = case UsePercentage > ThresholdDiskUse of
                                 true ->
                                     ?WD_LEVEL_ERROR;
                                 false when UsePercentage >= ?WD_WARN_USE_PERCENTAGE ->
@@ -213,9 +217,9 @@ check(Id, [Path|Rest], #state{threshold_disk_util = ThresholdDiskUtil} = State, 
             end,
     check(Id, Rest, State, Acc_1).
 
-%% @doc
+%% @doc Check disk use%
 %% @private
-disk_util(Tokens, DiskData) ->
+disk_use(Tokens, DiskData) ->
     Len  = length(Tokens),
     Path = case Tokens of
                [] ->
@@ -223,47 +227,63 @@ disk_util(Tokens, DiskData) ->
                _ ->
                    "/" ++ filename:join(Tokens)
            end,
-    case disk_util_1(DiskData, Path) of
+    case disk_use_1(DiskData, Path) of
         not_found when Len > 1 ->
-            disk_util(lists:sublist(Tokens, Len - 1), DiskData);
+            disk_use(lists:sublist(Tokens, Len - 1), DiskData);
         not_found ->
-            disk_util([], DiskData);
+            disk_use([], DiskData);
         Ret ->
             Ret
     end.
 
 %% @private
-disk_util_1([],_) ->
+disk_use_1([],_) ->
     not_found;
-disk_util_1([#disk_data{
+disk_use_1([#disk_data{
                 blocks     = Blocks,
                 available  = Available,
                 mounted_on = Path} = Data|_], Path) ->
     Data#disk_data{use_percentage =
                        (100 - erlang:round(Available/Blocks * 100))};
-disk_util_1([_|Rest], Path) ->
-    disk_util_1(Rest, Path).
+disk_use_1([_|Rest], Path) ->
+    disk_use_1(Rest, Path).
 
 
+%% @doc Check disk util
 %% @private
-io_wait(#state{threshold_iowait = ThresholdIoWait}) ->
-    IoWait = io_wait_1(os:type()),
-    Level  = case (IoWait >  ThresholdIoWait) of
+disk_util(#state{threshold_disk_util = ThresholdDiskUtil}) ->
+    DiskUtil = disk_util_1(os:type()),
+    Level  = case (DiskUtil >  ThresholdDiskUtil) of
                  true ->
                      ?WD_LEVEL_ERROR;
                  false ->
                      ?WD_LEVEL_SAFE
              end,
-    {Level, IoWait}.
+    {Level, DiskUtil}.
 
-%% @doc Retrieve io-wait for Linux
+%% @doc Retrieve io-wait for Linux(CentOS, Ubuntu)
 %% @private
-io_wait_1({unix, linux}) ->
-    list_to_integer(
-      erlang:hd(
-        string:tokens(
-          os:cmd("vmstat 1 2 | tail -n 1 | awk '{print $16}'"), "\n")));
+disk_util_1({unix, linux}) ->
+    case os:cmd("which iostat") of
+        [] ->
+            0.0;
+        _ ->
+            CmdRet = os:cmd("iostat -x 1 2"),
+            Tokens_1 = string:tokens(
+                         string:substr(
+                           CmdRet,
+                           string:rstr(CmdRet, "Device")), "\n"),
+            [_|Tokens_2] = Tokens_1,
+            UtilList = lists:map(
+                         fun(X) ->
+                                 [U|_] = lists:reverse(string:tokens(X, " ")),
+                                 list_to_float(U)
+                         end, Tokens_2),
+            MaxUtil = lists:max(UtilList),
+            MaxUtil
+    end;
+
 %% @TODO solaris/smartos
 %% @TODO freebsd
-io_wait_1(_) ->
+disk_util_1(_) ->
     0.
