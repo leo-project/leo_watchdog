@@ -139,7 +139,9 @@ get_disk_data(_,_) ->
                                                        State::#state{},
                                                        Error::any()).
 handle_call(Id, #state{target_paths  = TargetPaths} = State) ->
-    ok = check(Id, TargetPaths, State, []),
+    spawn(fun() ->
+                  ok = check(Id, TargetPaths, State, [])
+          end),
     {ok, State}.
 
 
@@ -257,13 +259,28 @@ io_wait(#state{threshold_iowait = ThresholdIoWait}) ->
              end,
     {Level, IoWait}.
 
-%% @doc Retrieve io-wait for Linux
+%% @doc Retrieve io-wait for Linux(CentOS, Ubuntu)
 %% @private
 io_wait_1({unix, linux}) ->
-    list_to_integer(
-      erlang:hd(
-        string:tokens(
-          os:cmd("vmstat 1 2 | tail -n 1 | awk '{print $16}'"), "\n")));
+    case os:cmd("which iostat") of
+        [] ->
+            0.0;
+        _ ->
+            CmdRet = os:cmd("iostat -x 1 2"),
+            Tokens_1 = string:tokens(
+                         string:substr(
+                           CmdRet,
+                           string:rstr(CmdRet, "Device")), "\n"),
+            [_|Tokens_2] = Tokens_1,
+            UtilList = lists:map(
+                         fun(X) ->
+                                 [U|_] = lists:reverse(string:tokens(X, " ")),
+                                 list_to_float(U)
+                         end, Tokens_2),
+            MaxUtil = lists:max(UtilList),
+            MaxUtil
+    end;
+
 %% @TODO solaris/smartos
 %% @TODO freebsd
 io_wait_1(_) ->
