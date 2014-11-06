@@ -180,16 +180,16 @@ check(Id, [], State, Acc) ->
       end, Acc),
 
     %% Check disk-util
-    {IoWaitLevel, IoWait} = disk_util(State),
-    case IoWaitLevel of
+    {DiskUtilLevel, DiskUtil} = disk_util(State),
+    case DiskUtilLevel of
         ?WD_LEVEL_SAFE->
             elarm:clear(Id, ?WD_ITEM_DISK_UTIL);
         _ ->
             elarm:raise(Id, ?WD_ITEM_DISK_UTIL,
                         #watchdog_state{id = Id,
-                                        level = IoWaitLevel,
+                                        level = DiskUtilLevel,
                                         src   = ?WD_ITEM_DISK_UTIL,
-                                        props = [{?WD_ITEM_DISK_UTIL, IoWait}
+                                        props = [{?WD_ITEM_DISK_UTIL, DiskUtil}
                                                 ]})
     end,
     ok;
