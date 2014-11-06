@@ -160,7 +160,7 @@ handle_fail(_Id,_Cause) ->
 %% @doc Check disk-related items
 %% @private
 check(Id, [], State, Acc) ->
-    %% Disk util
+    %% Disk use%
     lists:foreach(
       fun(DiskData) ->
               L = leo_misc:get_value(level, DiskData),
@@ -168,28 +168,28 @@ check(Id, [], State, Acc) ->
               M = leo_misc:get_value(mounted_on, D),
               case L of
                   ?WD_LEVEL_SAFE->
-                      elarm:clear(Id, {?WD_ITEM_DISK_UTIL, M});
+                      elarm:clear(Id, {?WD_ITEM_DISK_USE, M});
                   _ ->
-                      elarm:raise(Id, {?WD_ITEM_DISK_UTIL, M},
+                      elarm:raise(Id, {?WD_ITEM_DISK_USE, M},
                                   #watchdog_state{id = Id,
                                                   level = L,
                                                   src   = M,
-                                                  props = [{?WD_ITEM_DISK_UTIL, D}
+                                                  props = [{?WD_ITEM_DISK_USE, D}
                                                           ]})
               end
       end, Acc),
 
-    %% iowait
+    %% Disk util
     {IoWaitLevel, IoWait} = io_wait(State),
     case IoWaitLevel of
         ?WD_LEVEL_SAFE->
-            elarm:clear(Id, ?WD_ITEM_IOWAIT);
+            elarm:clear(Id, ?WD_ITEM_DISK_UTIL);
         _ ->
-            elarm:raise(Id, ?WD_ITEM_IOWAIT,
+            elarm:raise(Id, ?WD_ITEM_DISK_UTIL,
                         #watchdog_state{id = Id,
                                         level = IoWaitLevel,
-                                        src   = ?WD_ITEM_IOWAIT,
-                                        props = [{?WD_ITEM_IOWAIT, IoWait}
+                                        src   = ?WD_ITEM_DISK_UTIL,
+                                        props = [{?WD_ITEM_DISK_UTIL, IoWait}
                                                 ]})
     end,
     ok;

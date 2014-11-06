@@ -60,7 +60,7 @@ start_link() ->
                                    Args::[any()],
                                    Interval::pos_integer()).
 start_child(Type, Args, Interval) ->
-    case supervisor:start_child(?MODULE, child_spec(Type, Args, Interval)) of
+    case supervisor:start_child(?MODULE, child_spec(Type, Args, Interval * 1000)) of
         {ok, _Pid} ->
             ok;
         Cause ->

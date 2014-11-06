@@ -47,7 +47,7 @@ suite_test_() ->
     {setup,
      fun ( ) ->
              application:start(leo_watchdog),
-             Interval   = timer:seconds(3),
+             Interval = 3,
              MaxMemForBin = 1024 * 1024 * 32,
              MaxLoadAvg  = 2,
              MaxCPUUtil  = 30,
@@ -65,8 +65,8 @@ suite_test_() ->
                     'leo_watchdog_sub_cpu', [?WD_ITEM_LOAD_AVG,
                                              ?WD_ITEM_CPU_UTIL], ?MODULE),
              ok = leo_watchdog_sup:start_subscriber(
-                    'leo_watchdog_sub_disk', [?WD_ITEM_DISK_UTIL,
-                                              ?WD_ITEM_IOWAIT], ?MODULE),
+                    'leo_watchdog_sub_disk', [?WD_ITEM_DISK_USE,
+                                              ?WD_ITEM_DISK_UTIL], ?MODULE),
              ok
      end,
      fun (_) ->
