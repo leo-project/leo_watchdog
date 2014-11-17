@@ -97,7 +97,8 @@ handle_call(Id, #state{threshold_input   = ThresholdInput,
     DiffInput  = CurInput  - PrevInput,
     DiffOutput = CurOutput - PrevOutput,
     CurTotalIO = DiffInput + DiffOutput,
-    ThresholdIO = erlang:round((ThresholdInput + ThresholdOutput) * Interval / 1000),
+    ThresholdIO = erlang:round((ThresholdInput + ThresholdOutput)
+                               * Interval / 1000),
 
     case (CurTotalIO > ThresholdIO) of
         true ->
@@ -115,8 +116,15 @@ handle_call(Id, #state{threshold_input   = ThresholdInput,
         false ->
             elarm:clear(Id, ?WD_ITEM_IO)
     end,
-    {ok, State#state{prev_input  = CurInput,
-                     prev_output = CurOutput}}.
+
+    case (CurTotalIO > 0) of
+        true ->
+            {ok, State#state{prev_input  = CurInput,
+                             prev_output = CurOutput}};
+        false ->
+            {ok, State#state{prev_input  = 0,
+                             prev_output = 0}}
+    end.
 
 
 %% @dog Call execution failed

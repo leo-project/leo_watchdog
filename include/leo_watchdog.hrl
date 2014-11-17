@@ -62,14 +62,20 @@
 -define(DEF_OUTPUT_PER_SEC, 134217728). %% 128MB
 -define(DEF_DISK_USE,       85).
 -define(DEF_DISK_UTIL,      95.0).
+-define(DEF_DISK_READ_KB,   65536). %% 64MB
+-define(DEF_DISK_WRITE_KB,  65536). %% 64MB
+-define(DEF_RAISED_ERROR_TIMES, 3).
 
 
 -define(WD_WARN_USE_PERCENTAGE, 80).
 -define(WD_ITEM_LOAD_AVG,  'load_avg').
 -define(WD_ITEM_CPU_UTIL,  'cpu_util').
--define(WD_ITEM_IO,        'io_input').
+-define(WD_ITEM_IO,        'erlang_io').
 -define(WD_ITEM_DISK_USE,  'disk_use_per').
 -define(WD_ITEM_DISK_UTIL, 'disk_util').
+-define(WD_ITEM_DISK_IO,   'disk_io').
+-define(WD_ITEM_DISK_RKB,  'disk_rkb').
+-define(WD_ITEM_DISK_WKB,  'disk_wkb').
 
 
 %% macro - elarm#alarm{} to leo_watchdog#watchdog_alarm{}
@@ -210,6 +216,14 @@
             _ ->
                 ?DEF_WATCH_INTERVAL
         end).
+%% @doc Watchdog - disk - raised error times
+-define(env_wd_disk_raised_error_times(App),
+        case application:get_env(App, wd_raised_error_times) of
+            {ok, EnvRaisedErrorTimes} ->
+                EnvRaisedErrorTimes;
+            _ ->
+                ?DEF_RAISED_ERROR_TIMES
+        end).
 %% @doc Watchdog - disk - threshold iowait
 -define(env_wd_threshold_disk_use(App),
         case application:get_env(App, wd_threshold_disk_use) of
@@ -225,4 +239,19 @@
                 EnvWDThresholdDiskUtil;
             _ ->
                 ?DEF_DISK_UTIL
+        end).
+%% @doc Watchdog - disk - read kb/sec
+-define(env_wd_threshold_disk_rkb(App),
+        case application:get_env(App, wd_threshold_disk_rkb) of
+            {ok, EnvWDThresholdRkb} ->
+                EnvWDThresholdRkb;
+            _ ->
+                ?DEF_DISK_READ_KB
+        end).
+-define(env_wd_threshold_disk_wkb(App),
+        case application:get_env(App, wd_threshold_disk_wkb) of
+            {ok, EnvWDThresholdWkb} ->
+                EnvWDThresholdWkb;
+            _ ->
+                ?DEF_DISK_WRITE_KB
         end).
