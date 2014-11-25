@@ -33,6 +33,7 @@
 
 %% API
 -export([start_link/3,
+         start_link/4,
          stop/0]).
 
 %% Callback
@@ -42,7 +43,9 @@
 
 -record(state, {
           threshold_load_avg = 0.0 :: float(),
-          threshold_cpu_util = 0.0 :: float()
+          threshold_cpu_util = 0.0 :: float(),
+          raised_error_times = 3   :: non_neg_integer(),
+          cur_error_times    = 0   :: non_neg_integer()
          }).
 
 
@@ -59,8 +62,23 @@
                                 Pid::pid(),
                                 Error::{already_started,Pid} | term()).
 start_link(ThresholdLoadAvg, ThresholdCPUUtil, Interval) ->
+    start_link(ThresholdLoadAvg, ThresholdCPUUtil,
+               ?DEF_RAISED_ERROR_TIMES, Interval).
+
+%% @doc Start the server
+-spec(start_link(ThresholdLoadAvg, ThresholdCPUUtil, RaisedErrorTimes, Interval) ->
+             {ok,Pid} |
+             ignore |
+             {error,Error} when ThresholdLoadAvg::float(),
+                                ThresholdCPUUtil::float(),
+                                RaisedErrorTimes::non_neg_integer(),
+                                Interval::pos_integer(),
+                                Pid::pid(),
+                                Error::{already_started,Pid} | term()).
+start_link(ThresholdLoadAvg, ThresholdCPUUtil, RaisedErrorTimes, Interval) ->
     State = #state{threshold_load_avg = ThresholdLoadAvg,
-                   threshold_cpu_util = ThresholdCPUUtil},
+                   threshold_cpu_util = ThresholdCPUUtil,
+                   raised_error_times = RaisedErrorTimes},
     leo_watchdog:start_link(?MODULE, ?MODULE, State, Interval).
 
 
@@ -88,7 +106,9 @@ init(_State) ->
                                                        State::#state{},
                                                        Error::any()).
 handle_call(Id, #state{threshold_load_avg = ThresholdLoadAvg,
-                       threshold_cpu_util = ThresholdCpuUtil} = State) ->
+                       threshold_cpu_util = ThresholdCpuUtil,
+                       raised_error_times = RaisedErrorTimes,
+                       cur_error_times    = CurErrorTimes} = State) ->
     try
         AVG_1 = erlang:round(cpu_sup:avg1() / 256 * 1000) / 10,
         AVG_5 = erlang:round(cpu_sup:avg5() / 256 * 1000) / 10,
@@ -98,39 +118,59 @@ handle_call(Id, #state{threshold_load_avg = ThresholdLoadAvg,
                        _OtherOS ->
                            0
                    end,
+        ErrorLevel = case (CurErrorTimes + 1 >= RaisedErrorTimes) of
+                         true  -> ?WD_LEVEL_ERROR;
+                         false -> ?WD_LEVEL_WARN
+                     end,
+
         %% Load avg
-        case (ThresholdLoadAvg * 100 < AVG_1 orelse
-              ThresholdLoadAvg * 100 < AVG_5) of
-            true ->
-                elarm:raise(Id, ?WD_ITEM_LOAD_AVG,
-                            #watchdog_state{id = Id,
-                                            level = ?WD_LEVEL_ERROR,
-                                            src   = ?WD_ITEM_LOAD_AVG,
-                                            props = [{load_avg_1, AVG_1},
-                                                     {load_avg_5, AVG_5}
-                                                    ]});
-            false ->
-                elarm:clear(Id, ?WD_ITEM_LOAD_AVG)
-        end,
+        Level_1 = case (ThresholdLoadAvg * 100 < AVG_1 orelse
+                        ThresholdLoadAvg * 100 < AVG_5) of
+                      true ->
+                          elarm:raise(Id, ?WD_ITEM_LOAD_AVG,
+                                      #watchdog_state{id = Id,
+                                                      level = ErrorLevel,
+                                                      src   = ?WD_ITEM_LOAD_AVG,
+                                                      props = [{?WD_ITEM_LOAD_AVG_1M, AVG_1},
+                                                               {?WD_ITEM_LOAD_AVG_5M, AVG_5}
+                                                              ]}),
+                          ErrorLevel;
+                      false ->
+                          elarm:clear(Id, ?WD_ITEM_LOAD_AVG),
+                          ?WD_LEVEL_SAFE
+                      end,
 
         %% CPU util
-        case (CPU_Util > ThresholdCpuUtil) of
-            true ->
-                elarm:raise(Id, ?WD_ITEM_CPU_UTIL,
-                            #watchdog_state{id = Id,
-                                            level = ?WD_LEVEL_ERROR,
-                                            src   = ?WD_ITEM_CPU_UTIL,
-                                            props = [{?WD_ITEM_CPU_UTIL, CPU_Util}
-                                                    ]});
-            false ->
-                elarm:clear(Id, ?WD_ITEM_CPU_UTIL)
-        end,
-        ok
+        Level_2 = case (CPU_Util > ThresholdCpuUtil) of
+                      true ->
+                          elarm:raise(Id, ?WD_ITEM_CPU_UTIL,
+                                      #watchdog_state{id = Id,
+                                                      level = ErrorLevel,
+                                                      src   = ?WD_ITEM_CPU_UTIL,
+                                                      props = [{?WD_ITEM_CPU_UTIL, CPU_Util}
+                                                              ]}),
+                          ErrorLevel;
+                      false ->
+                          elarm:clear(Id, ?WD_ITEM_CPU_UTIL),
+                          ?WD_LEVEL_SAFE
+                  end,
+
+        %% Check the result
+        CurErrorTimes_1 =
+            case (Level_1 >= ?WD_LEVEL_WARN orelse
+                  Level_2 >= ?WD_LEVEL_WARN) of
+                true when CurErrorTimes >= RaisedErrorTimes ->
+                    0;
+                true ->
+                    CurErrorTimes + 1;
+                false ->
+                    0
+            end,
+        {ok, State#state{cur_error_times = CurErrorTimes_1}}
     catch
         _:_ ->
-            ok
-    end,
-    {ok, State}.
+            {ok, State}
+    end.
 
 %% @dog Call execution failed
 -spec(handle_fail(Id, Cause) ->
