@@ -217,9 +217,9 @@ check(Id, [], #state{
               M = leo_misc:get_value(mounted_on, D),
               case L of
                   ?WD_LEVEL_SAFE->
-                      elarm:clear(Id, {?WD_ITEM_DISK_USE, M});
+                      elarm:clear(Id, ?WD_ITEM_DISK_USE);
                   _ ->
-                      elarm:raise(Id, {?WD_ITEM_DISK_USE, M},
+                      elarm:raise(Id, ?WD_ITEM_DISK_USE,
                                   #watchdog_state{id = Id,
                                                   level = L,
                                                   src   = M,
@@ -230,8 +230,8 @@ check(Id, [], #state{
 
     %% Check disk-util
     {ok, DiskStats} = disk_stats(State),
-    LevelDiskUtil  = leo_misc:get_value(?WD_ITEM_DISK_UTIL, DiskStats, 0),
-    LevelDiskIO    = leo_misc:get_value(?WD_ITEM_DISK_IO,   DiskStats, 0),
+    LevelDiskUtil = leo_misc:get_value(?WD_ITEM_DISK_UTIL, DiskStats, 0),
+    LevelDiskIO   = leo_misc:get_value(?WD_ITEM_DISK_IO,   DiskStats, 0),
     CurErrorTimes_1 =
         case (LevelDiskUtil >= ?WD_LEVEL_WARN orelse
               LevelDiskIO   >= ?WD_LEVEL_WARN) of

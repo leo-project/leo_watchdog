@@ -154,7 +154,7 @@ code_change(_OldVsn, State, _Extra) ->
 disk_stats({unix, linux}, TargetDevices) ->
     case os:cmd("which iostat") of
         [] ->
-            0.0;
+            #disk_stat{};
         _ ->
             %% Execute os-command
             CmdRet = os:cmd("iostat -x 1 2"),
@@ -177,10 +177,13 @@ disk_stats({unix, linux}, TargetDevices) ->
             get_target_values(TargetDevices, Tokens_2, PosOfItems)
     end;
 
+disk_stats({unix, darwin},_TargetDevices) ->
+    #disk_stat{};
+
 %% @TODO solaris/smartos
 %% @TODO freebsd
 disk_stats(_,_) ->
-    0.
+    #disk_stat{}.
 
 
 %% @private

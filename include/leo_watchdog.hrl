@@ -98,7 +98,10 @@
                    event_time = _EventTime} = _Alarm,
             #watchdog_alarm{id = _WatchdogId,
                             state = _Info,
-                            event_time = _EventTime}
+                            event_time =
+                                leo_date:greg_seconds_to_unixtime(
+                                  calendar:datetime_to_gregorian_seconds(_EventTime))
+                           }
         end).
 
 

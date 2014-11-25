@@ -30,13 +30,10 @@
 
 -ifdef(EUNIT).
 
--export([notify/2]).
-notify(Id, Alarm) ->
-    error_logger:warning_msg(
-      "~p,~p,~p,~p~n",
-      [{module, ?MODULE_STRING},
-       {function, "notify/2"},
-       {line, ?LINE}, {body, {Id, Alarm}}]),
+-export([notify/2
+        ]).
+notify(Id,Alarm) ->
+    ?debugVal({Id, Alarm}),
     ok.
 
 
@@ -59,6 +56,7 @@ suite_test_() ->
              ok = leo_watchdog_sup:start_child(cpu,  [MaxLoadAvg, MaxCPUUtil], Interval),
              ok = leo_watchdog_sup:start_child(io,   [MaxInput, MaxOutput], Interval),
              ok = leo_watchdog_sup:start_child(disk, [["/"], MaxDiskUtil, MaxIoWait], Interval),
+
              ok = leo_watchdog_sup:start_subscriber(
                     'leo_watchdog_sub_io', [?WD_ITEM_IO], ?MODULE),
              ok = leo_watchdog_sup:start_subscriber(
@@ -66,7 +64,8 @@ suite_test_() ->
                                              ?WD_ITEM_CPU_UTIL], ?MODULE),
              ok = leo_watchdog_sup:start_subscriber(
                     'leo_watchdog_sub_disk', [?WD_ITEM_DISK_USE,
-                                              ?WD_ITEM_DISK_UTIL], ?MODULE),
+                                              ?WD_ITEM_DISK_UTIL,
+                                              ?WD_ITEM_DISK_IO], ?MODULE),
              ok
      end,
      fun (_) ->
@@ -105,11 +104,6 @@ send_message(0,_Pid) ->
 send_message(NumOfMsgs, Pid) ->
     case (NumOfMsgs rem 100000) of
         0 ->
-            %% NotSafeItems = leo_watchdog_state:find_not_safe_items(),
-            %% ?debugVal({State_CPU, State_IO, NotSafeItems}),
-            ?debugVal(leo_watchdog_state:find_by_id('leo_watchdog_cpu')),
-            ?debugVal(leo_watchdog_state:find_by_id('leo_watchdog_io')),
-            ?debugVal(leo_watchdog_state:find_by_id('leo_watchdog_disk')),
             ?debugVal(leo_watchdog_state:find_not_safe_items()),
             timer:sleep(10);
         _ ->
