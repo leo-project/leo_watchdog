@@ -75,14 +75,16 @@
 
 
 -define(WD_WARN_USE_PERCENTAGE, 80).
--define(WD_ITEM_LOAD_AVG,  'load_avg').
--define(WD_ITEM_CPU_UTIL,  'cpu_util').
--define(WD_ITEM_IO,        'erlang_io').
--define(WD_ITEM_DISK_USE,  'disk_use_per').
--define(WD_ITEM_DISK_UTIL, 'disk_util').
--define(WD_ITEM_DISK_IO,   'disk_io').
--define(WD_ITEM_DISK_RKB,  'disk_rkb').
--define(WD_ITEM_DISK_WKB,  'disk_wkb').
+-define(WD_ITEM_LOAD_AVG,    'load_avg').
+-define(WD_ITEM_LOAD_AVG_1M, 'load_avg_1m').
+-define(WD_ITEM_LOAD_AVG_5M, 'load_avg_5m').
+-define(WD_ITEM_CPU_UTIL,    'cpu_util').
+-define(WD_ITEM_IO,          'erlang_io').
+-define(WD_ITEM_DISK_USE,    'disk_use_per').
+-define(WD_ITEM_DISK_UTIL,   'disk_util').
+-define(WD_ITEM_DISK_IO,     'disk_io').
+-define(WD_ITEM_DISK_RKB,    'disk_rkb').
+-define(WD_ITEM_DISK_WKB,    'disk_wkb').
 
 -define(WD_TBL_IOSTAT, 'leo_watchdog_iostat').
 -define(WD_TBL_VMSTAT, 'leo_watchdog_vmstat').
@@ -169,6 +171,14 @@
             _ ->
                 ?DEF_CPU_UTIL
         end).
+%% @doc Watchdog - cpu - raised error times
+-define(env_wd_cpu_raised_error_times(App),
+        case application:get_env(App, wd_cpu_raised_error_times) of
+            {ok, EnvRaisedCPUErrorTimes} ->
+                EnvRaisedCPUErrorTimes;
+            _ ->
+                ?DEF_RAISED_ERROR_TIMES
+        end).
 
 %% ---------------------------------------------------------------------
 %% IO
@@ -228,9 +238,9 @@
         end).
 %% @doc Watchdog - disk - raised error times
 -define(env_wd_disk_raised_error_times(App),
-        case application:get_env(App, wd_raised_error_times) of
-            {ok, EnvRaisedErrorTimes} ->
-                EnvRaisedErrorTimes;
+        case application:get_env(App, wd_disk_raised_error_times) of
+            {ok, EnvRaisedDiskErrorTimes} ->
+                EnvRaisedDiskErrorTimes;
             _ ->
                 ?DEF_RAISED_ERROR_TIMES
         end).
