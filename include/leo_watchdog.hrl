@@ -48,6 +48,12 @@
           props = [] :: [{atom(), any()}]
          }).
 
+-record(disk_stat, {
+          util = 0.0 :: float(),
+          rkb  = 0.0 :: float(),
+          wkb  = 0.0 :: float()
+         }).
+
 -record(watchdog_alarm, {
           id :: watchdog_id(),
           state :: #watchdog_state{},
@@ -65,6 +71,7 @@
 -define(DEF_DISK_READ_KB,   65536). %% 64MB
 -define(DEF_DISK_WRITE_KB,  65536). %% 64MB
 -define(DEF_RAISED_ERROR_TIMES, 3).
+-define(DEF_CHECK_INTERVAL, 1). %% 1sec
 
 
 -define(WD_WARN_USE_PERCENTAGE, 80).
@@ -76,6 +83,9 @@
 -define(WD_ITEM_DISK_IO,   'disk_io').
 -define(WD_ITEM_DISK_RKB,  'disk_rkb').
 -define(WD_ITEM_DISK_WKB,  'disk_wkb').
+
+-define(WD_TBL_IOSTAT, 'leo_watchdog_iostat').
+-define(WD_TBL_VMSTAT, 'leo_watchdog_vmstat').
 
 
 %% macro - elarm#alarm{} to leo_watchdog#watchdog_alarm{}

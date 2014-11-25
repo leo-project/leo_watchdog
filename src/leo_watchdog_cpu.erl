@@ -36,7 +36,8 @@
          stop/0]).
 
 %% Callback
--export([handle_call/2,
+-export([init/1,
+         handle_call/2,
          handle_fail/2]).
 
 -record(state, {
@@ -73,6 +74,14 @@ stop() ->
 %%--------------------------------------------------------------------
 %% Callback
 %%--------------------------------------------------------------------
+%% @doc Initialize this process
+-spec(init(State) ->
+             ok | {error, Cause} when State::any(),
+                                      Cause::any()).
+init(_State) ->
+    ok.
+
+
 %% @dog Call execution of the watchdog
 -spec(handle_call(Id, State) ->
              {ok, State} | {{error,Error}, State} when Id::atom(),

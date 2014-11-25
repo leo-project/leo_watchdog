@@ -77,6 +77,7 @@ stop(Id) ->
 %%--------------------------------------------------------------------
 %% @doc Initiates the server
 init([Id, CallbackMod, Props, Interval]) ->
+    ok = CallbackMod:init(Props),
     {ok, #state{id = Id,
                 callback_mod = CallbackMod,
                 properties = Props,

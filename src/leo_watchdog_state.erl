@@ -67,6 +67,19 @@ find_not_safe_items() ->
         {ok, []} ->
             not_found;
         {ok, Items} ->
-            Items_1 = [?to_watchdog_alarm(Alarm) || Alarm <- Items],
-            {ok, Items_1}
+            Items_1 = lists:foldl(
+                        fun(#watchdog_alarm{
+                               state = #watchdog_state{
+                                          level = Level}} = A, SoFar) when Level >= ?WD_LEVEL_ERROR ->
+                                [A|SoFar];
+                           (_, SoFar) ->
+                                SoFar
+                        end, [], [?to_watchdog_alarm(Alarm) ||
+                                     Alarm <- Items]),
+            case Items_1 of
+                [] ->
+                    not_found;
+                _ ->
+                    {ok, Items_1}
+            end
     end.

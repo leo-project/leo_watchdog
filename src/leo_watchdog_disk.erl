@@ -37,18 +37,13 @@
          stop/0]).
 
 %% Callback
--export([handle_call/2,
+-export([init/1,
+         handle_call/2,
          handle_fail/2]).
 
 -export([disk_use/2,
          get_disk_data/0
         ]).
-
--define(PROP_TARGET_PATHS,  'target_paths').
--define(DEF_DISK_USAGE, 90.0).
--define(DISK_ITEM_RKB,  'rkb').
--define(DISK_ITEM_WKB,  'wkb').
--define(DISK_ITEM_UTIL, 'util').
 
 -record(state, {
           id :: atom(),
@@ -74,13 +69,6 @@
           mounted_on = [] :: string()
          }).
 
--record(disk_stat, {
-          util = 0.0 :: float(),
-          rkb  = 0.0 :: float(),
-          wkb  = 0.0 :: float()
-         }).
-
-
 %%--------------------------------------------------------------------
 %% API
 %%--------------------------------------------------------------------
@@ -93,10 +81,10 @@
                                                     Pid::pid(),
                                                     Error::{already_started,Pid} | term()).
 start_link(TargetPaths, ThresholdDiskUse, ThresholdDiskUtil, IntervalTime) ->
-    leo_watchdog:start_link(?MODULE, ?MODULE,
-                            #state{target_paths  = TargetPaths,
-                                   threshold_disk_use  = ThresholdDiskUse,
-                                   threshold_disk_util = ThresholdDiskUtil}, IntervalTime).
+    start_link(TargetPaths, ThresholdDiskUse, [], ThresholdDiskUtil,
+               ?DEF_DISK_READ_KB, ?DEF_DISK_WRITE_KB,
+               ?DEF_RAISED_ERROR_TIMES,
+               IntervalTime).
 
 
 %% @doc Start the server
@@ -181,17 +169,27 @@ get_disk_data(_,_) ->
 %%--------------------------------------------------------------------
 %% Callback
 %%--------------------------------------------------------------------
+%% @doc Initialize this process
+-spec(init(State) ->
+             ok | {error, Cause} when State::any(),
+                                      Cause::any()).
+init(#state{target_devices = Devices}) ->
+    spawn(fun() ->
+                  ok = leo_watchdog_sup:start_child(
+                         iostat, [os:type(), Devices], ?DEF_CHECK_INTERVAL)
+          end),
+    ok.
+
+
 %% @dog Call execution of the watchdog
 -spec(handle_call(Id, State) ->
              {ok, State} | {{error,Error}, State} when Id::atom(),
                                                        State::#state{},
                                                        Error::any()).
 handle_call(Id, #state{target_paths  = TargetPaths} = State) ->
-    %% @TODO: get new-state, then set it in the state
-    spawn(fun() ->
-                  ok = check(Id, TargetPaths, State, [])
-          end),
-    {ok, State}.
+    %% Retrieve new-state, then set it in the state
+    {ok, State_1} = check(Id, TargetPaths, State, []),
+    {ok, State_1}.
 
 
 %% @dog Call execution failed
@@ -208,7 +206,9 @@ handle_fail(_Id,_Cause) ->
 %%--------------------------------------------------------------------
 %% @doc Check disk-related items
 %% @private
-check(Id, [], State, Acc) ->
+check(Id, [], #state{
+                 raised_error_times = RaisedErrorTimes,
+                 cur_error_times    = CurErrorTimes} = State, Acc) ->
     %% Summarize result of disk use%
     lists:foreach(
       fun(DiskData) ->
@@ -229,9 +229,21 @@ check(Id, [], State, Acc) ->
       end, Acc),
 
     %% Check disk-util
-    {ok, _NewState} = disk_stats(State),
-    %% @TODO: return state
-    ok;
+    {ok, DiskStats} = disk_stats(State),
+    LevelDiskUtil  = leo_misc:get_value(?WD_ITEM_DISK_UTIL, DiskStats, 0),
+    LevelDiskIO    = leo_misc:get_value(?WD_ITEM_DISK_IO,   DiskStats, 0),
+    CurErrorTimes_1 =
+        case (LevelDiskUtil >= ?WD_LEVEL_WARN orelse
+              LevelDiskIO   >= ?WD_LEVEL_WARN) of
+            true when CurErrorTimes >= RaisedErrorTimes ->
+                0;
+            true ->
+                CurErrorTimes + 1;
+            false ->
+                0
+        end,
+    {ok, State#state{cur_error_times = CurErrorTimes_1}};
+
 check(Id, [Path|Rest], #state{threshold_disk_use = ThresholdDiskUse} = State, Acc) ->
     Acc_1 = case get_disk_data() of
                 [] ->
@@ -290,159 +302,58 @@ disk_use_1([_|Rest], Path) ->
 
 %% @doc Check disk util
 %% @private
-disk_stats(#state{id = Id,
-                  target_devices = TargetDevices,
-                  threshold_disk_util = ThresholdDiskUtil,
-                  threshold_disk_rkb  = ThresholdRkb,
-                  threshold_disk_wkb  = ThresholdWkb,
-                  raised_error_times  = _RaisedThreshold} = State) ->
-    DiskStats = disk_stats_1(os:type(), TargetDevices),
-    #disk_stat{util = Util,
-               rkb  = Rkb,
-               wkb  = Wkb} = DiskStats,
+disk_stats(State) ->
+    DiskStats = leo_watchdog_iostat:get(),
+    disk_stats_1(DiskStats, State).
+
+%% @private
+disk_stats_1({ok, []},_) ->
+    {ok, []};
+disk_stats_1({ok, #disk_stat{util = Util,
+                             rkb  = Rkb,
+                             wkb  = Wkb} = DiskStats},
+             #state{id = Id,
+                    threshold_disk_util = ThresholdDiskUtil,
+                    threshold_disk_rkb  = ThresholdRkb,
+                    threshold_disk_wkb  = ThresholdWkb,
+                    raised_error_times  = RaisedThreshold,
+                    cur_error_times     = CurErrorTimes
+                   }) ->
+    ErrorLevel =  case (CurErrorTimes + 1 >= RaisedThreshold) of
+                      true  -> ?WD_LEVEL_ERROR;
+                      false -> ?WD_LEVEL_WARN
+                  end,
 
     State_1 = case (Util >  ThresholdDiskUtil) of
-                  true  ->
+                  true ->
                       elarm:raise(
                         Id, ?WD_ITEM_DISK_UTIL,
                         #watchdog_state{id = Id,
-                                        level = ?WD_LEVEL_ERROR,
+                                        level = ErrorLevel,
                                         src   = ?WD_ITEM_DISK_UTIL,
                                         props = [{?WD_ITEM_DISK_UTIL, Util}
-                                                ]});
-                  false->
+                                                ]}),
+                      [{?WD_ITEM_DISK_UTIL, ErrorLevel}];
+                  false ->
                       elarm:clear(Id, ?WD_ITEM_DISK_UTIL),
-                      State
+                      [{?WD_ITEM_DISK_UTIL, ?WD_LEVEL_SAFE}]
               end,
     State_2 = case ((Rkb + Wkb) > (ThresholdRkb + ThresholdWkb)) of
                   true ->
                       elarm:raise(
                         Id, ?WD_ITEM_DISK_IO,
                         #watchdog_state{id = Id,
-                                        level = ?WD_LEVEL_ERROR,
+                                        level = ErrorLevel,
                                         src   = ?WD_ITEM_DISK_IO,
                                         props = [{?WD_ITEM_DISK_RKB, Rkb},
                                                  {?WD_ITEM_DISK_WKB, Wkb}
-                                                ]});
+                                                ]}),
+                      [{?WD_ITEM_DISK_IO, ErrorLevel}|State_1];
                   false ->
                       elarm:clear(Id, ?WD_ITEM_DISK_IO),
-                      State_1
+                      [{?WD_ITEM_DISK_IO, ?WD_LEVEL_SAFE}|State_1]
               end,
-    {ok, State_2}.
-
-
-%% @doc Retrieve io-wait for Linux(CentOS, Ubuntu)
-%% @private
-disk_stats_1({unix, linux}, TargetDevices) ->
-    case os:cmd("which iostat") of
-        [] ->
-            0.0;
-        _ ->
-            %% Execute os-command
-            CmdRet = os:cmd("iostat -x 1 2"),
-
-            %% Parsing result of os-command
-            Tokens_1 = string:tokens(
-                         string:substr(
-                           CmdRet,
-                           string:rstr(CmdRet, "Device")), "\n"),
-            HeaderTokens = string:tokens(hd(Tokens_1), " "),
-            {_, PosOfItems} =
-                lists:foldl(fun("rkB/s", {Idx, SoFar}) -> {Idx+1, [{rkb, Idx}|SoFar]};
-                               ("wkB/s", {Idx, SoFar}) -> {Idx+1, [{wkb, Idx}|SoFar]};
-                               ("%util", {Idx, SoFar}) -> {Idx+1, [{util,Idx}|SoFar]};
-                               (_, {Idx, SoFar}) -> {Idx+1, SoFar}
-                            end, {1,[]}, HeaderTokens),
-
-            %% Retrieving data
-            [_|Tokens_2] = Tokens_1,
-            get_target_values(TargetDevices, Tokens_2, PosOfItems)
-    end;
-
-%% @TODO solaris/smartos
-%% @TODO freebsd
-disk_stats_1(_,_) ->
-    0.
-
-
-%% @private
-get_target_values(TargetDevices, Tokens, PosOfItems) ->
-    DiskStats = get_taget_values_1(Tokens, PosOfItems, []),
-
-    %% Retrieving target-data
-    DiskStats_1 = get_target_values_2(TargetDevices, DiskStats, []),
-
-    %% Retrieve max value of each item
-    DiskStats_2 = max_value(DiskStats_1, #disk_stat{}),
-    DiskStats_2.
-
-
-%% @private
-get_taget_values_1([],_,SoFar) ->
-    SoFar;
-get_taget_values_1([Items|Rest], PosOfItems, SoFar) ->
-    RkbPos  = leo_misc:get_value(?DISK_ITEM_RKB,  PosOfItems),
-    WkbPos  = leo_misc:get_value(?DISK_ITEM_WKB,  PosOfItems),
-    UtilPos = leo_misc:get_value(?DISK_ITEM_UTIL, PosOfItems),
-
-    Tokens = string:tokens(Items, " "),
-    DevName = lists:nth(1, Tokens),
-    RkbVal  = get_item(float, RkbPos,  Tokens),
-    WkbVal  = get_item(float, WkbPos,  Tokens),
-    UtilVal = get_item(float, UtilPos, Tokens),
-
-    get_taget_values_1(Rest, PosOfItems,
-                       [{DevName, #disk_stat{util = UtilVal,
-                                             rkb = RkbVal,
-                                             wkb = WkbVal}}|SoFar]).
-
-%% @private
-get_item(_,undefined,_) ->
-    0;
-get_item(_, KeyPos, Values) when KeyPos > length(Values) ->
-    0;
-get_item(float, KeyPos, Values) ->
-    list_to_float(lists:nth(KeyPos, Values));
-get_item(integer, KeyPos, Values) ->
-    list_to_integer(lists:nth(KeyPos, Values));
-get_item(_,_,_) ->
-    0.
-
-
-%% @private
-get_target_values_2([],DiskStats,[]) ->
-    DiskStats;
-get_target_values_2([],_,Acc) ->
-    Acc;
-get_target_values_2([Device|Rest], DiskStats, Acc) ->
-    case leo_misc:get_value(Device, DiskStats) of
-        undefined ->
-            get_target_values_2(Rest, DiskStats, Acc);
-        Stat ->
-            get_target_values_2(Rest, DiskStats, [Stat|Acc])
-    end.
-
-
-%% @private
-max_value([], SoFar) ->
-    SoFar;
-max_value([{_, #disk_stat{util = Util,
-                          rkb  = Rkb,
-                          wkb  = Wkb}}|Rest], #disk_stat{util = CurUtil,
-                                                         rkb  = CurRkb,
-                                                         wkb  = CurWkb}) ->
-    RetUtil = case (Util > CurUtil) of
-                  true  -> Util;
-                  false -> CurUtil
-              end,
-    RetRkb  = case (Rkb > CurRkb) of
-                  true  -> Rkb;
-                  false -> CurRkb
-              end,
-    RetWkb  = case (Wkb > CurWkb) of
-                  true  -> Wkb;
-                  false -> CurWkb
-              end,
-    max_value(Rest, #disk_stat{util = RetUtil,
-                               rkb  = RetRkb,
-                               wkb  = RetWkb}).
+    DiskStats_2 = lists:zip(
+                    record_info(fields, disk_stat),
+                    tl(tuple_to_list(DiskStats))),
+    {ok, lists:merge(State_2, DiskStats_2)}.
