@@ -137,12 +137,14 @@ handle_info(timeout, #state{id = Id,
                       false ->
                           SafeTimes + 1
                   end,
-    catch erlang:apply(Mod, notify, [Id, [], SafeTimes_1]),
+    catch erlang:apply(Mod, notify,
+                       [Id, [], SafeTimes_1, leo_date:unixtime()]),
     {noreply, State#state{consecutive_safe_times = SafeTimes_1}, ?DEF_TIMEOUT};
 handle_info({elarm, _Ref, Alarm}, #state{id = Id,
                                          callback_mod = Mod} = State) ->
     Alarm_1 = ?to_watchdog_alarm(Alarm),
-    catch erlang:apply(Mod, notify, [Id, Alarm_1]),
+    catch erlang:apply(Mod, notify,
+                       [Id, Alarm_1, leo_date:unixtime()]),
     {noreply, State#state{consecutive_safe_times = 0}, ?DEF_TIMEOUT};
 handle_info(_, State) ->
     {noreply, State, ?DEF_TIMEOUT}.
