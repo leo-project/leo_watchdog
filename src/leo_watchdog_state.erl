@@ -32,7 +32,8 @@
 
 %% API
 -export([find_by_id/1,
-         find_not_safe_items/0
+         find_not_safe_items/0,
+         find_not_safe_items/1
         ]).
 
 %%--------------------------------------------------------------------
@@ -63,19 +64,39 @@ find_by_id_1([_|Rest], WatchdogId, Acc) ->
              {ok, Items} |
              not_found when Items::[{atom(), #watchdog_state{}}]).
 find_not_safe_items() ->
+    find_not_safe_items([]).
+
+-spec(find_not_safe_items(ExcludeItems) ->
+             {ok, Items} |
+             not_found when ExcludeItems::[WatchdogId],
+                            WatchdogId::atom(),
+                            Items::[{atom(), #watchdog_state{}}]).
+find_not_safe_items(ExcludeItems) ->
     case elarm:get_alarms() of
         {ok, []} ->
             not_found;
         {ok, Items} ->
-            Items_1 = lists:foldl(
-                        fun(#watchdog_alarm{
-                               state = #watchdog_state{
-                                          level = Level}} = A, SoFar) when Level >= ?WD_LEVEL_ERROR ->
-                                [A|SoFar];
-                           (_, SoFar) ->
-                                SoFar
-                        end, [], [?to_watchdog_alarm(Alarm) ||
-                                     Alarm <- Items]),
+            Items_1 =
+                lists:foldl(
+                  fun(#watchdog_alarm{
+                         id = Id,
+                         state = #watchdog_state{
+                                    level = Level}} = A, SoFar) when Level >= ?WD_LEVEL_ERROR ->
+                          case ExcludeItems of
+                              [] ->
+                                  [A|SoFar];
+                              _ ->
+                                  case lists:member(Id, ExcludeItems) of
+                                      true ->
+                                          SoFar;
+                                      false ->
+                                          [A|SoFar]
+                                  end
+                          end;
+                     (_, SoFar) ->
+                          SoFar
+                  end, [], [?to_watchdog_alarm(Alarm) ||
+                               Alarm <- Items]),
             case Items_1 of
                 [] ->
                     not_found;

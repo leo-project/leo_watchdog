@@ -89,6 +89,10 @@ suite() ->
                 end),
     send_message(NumOfMsgs, Pid),
     ?debugVal(leo_watchdog_state:find_not_safe_items()),
+    not_found = leo_watchdog_state:find_not_safe_items(['leo_watchdog_io',
+                                                        'leo_watchdog_disk',
+                                                        'leo_watchdog_cpu'
+                                                       ]),
     ok.
 
 %% @private

@@ -87,7 +87,6 @@
 -define(WD_ITEM_DISK_WKB,    'disk_wkb').
 
 -define(WD_TBL_IOSTAT, 'leo_watchdog_iostat').
--define(WD_TBL_VMSTAT, 'leo_watchdog_vmstat').
 
 
 %% macro - elarm#alarm{} to leo_watchdog#watchdog_alarm{}
