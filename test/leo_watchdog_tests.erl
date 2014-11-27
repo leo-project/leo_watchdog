@@ -30,10 +30,14 @@
 
 -ifdef(EUNIT).
 
--export([notify/2
+-export([notify/2,
+         notify/3
         ]).
-notify(Id,Alarm) ->
+notify(Id, Alarm) ->
     ?debugVal({Id, Alarm}),
+    ok.
+notify(Id, [], SafeTimes) ->
+    ?debugVal({Id, SafeTimes}),
     ok.
 
 

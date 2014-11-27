@@ -28,3 +28,7 @@
 
 -callback(notify(Id::atom(), Alarm::term()) ->
                  ok | {error, any()}).
+
+-callback(notify(Id::atom(), State::[{atom(), any()}],
+                 SafeTimes::non_neg_integer()) ->
+                 ok | {error, any()}).
