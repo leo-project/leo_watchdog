@@ -26,9 +26,9 @@
 
 -include("leo_watchdog.hrl").
 
--callback(notify(Id::atom(), Alarm::term(), Unixtime::non_neg_integer()) ->
+-callback(handle_notify(Id::atom(), Alarm::term(), Unixtime::non_neg_integer()) ->
                  ok | {error, any()}).
 
--callback(notify(Id::atom(), State::[{atom(), any()}],
-                 SafeTimes::non_neg_integer(), Unixtime::non_neg_integer()) ->
+-callback(handle_notify(Id::atom(), State::[{atom(), any()}],
+                        SafeTimes::non_neg_integer(), Unixtime::non_neg_integer()) ->
                  ok | {error, any()}).
