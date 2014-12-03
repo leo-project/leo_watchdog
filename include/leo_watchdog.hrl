@@ -74,6 +74,7 @@
 -define(DEF_CHECK_INTERVAL, 1). %% 1sec
 
 
+%% watchdog-related constants
 -define(WD_WARN_USE_PERCENTAGE, 80).
 -define(WD_ITEM_LOAD_AVG,    'load_avg').
 -define(WD_ITEM_LOAD_AVG_1M, 'load_avg_1m').
@@ -85,6 +86,14 @@
 -define(WD_ITEM_DISK_IO,     'disk_io').
 -define(WD_ITEM_DISK_RKB,    'disk_rkb').
 -define(WD_ITEM_DISK_WKB,    'disk_wkb').
+
+-define(WD_GRP_CPU,  [?WD_ITEM_LOAD_AVG,
+                      ?WD_ITEM_CPU_UTIL]).
+-define(WD_GRP_DISK, [?WD_ITEM_DISK_USE,
+                      ?WD_ITEM_DISK_UTIL,
+                      ?WD_ITEM_DISK_IO
+                     ]).
+-define(WD_GRP_IO,   [?WD_ITEM_IO]).
 
 -define(WD_TBL_IOSTAT, 'leo_watchdog_iostat').
 
