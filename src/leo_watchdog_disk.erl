@@ -149,8 +149,9 @@ get_disk_data({unix,darwin}, RetL) ->
                            mounted_on = MountedOn}
         end,
     [ F(Row) || Row <- RetL ];
-%% For Ubuntu/Debian, CentOS/RHEL
-get_disk_data({unix,linux}, RetL) ->
+%% For Ubuntu/Debian, CentOS/RHEL, FreeBSD
+get_disk_data({unix, Type}, RetL) when Type =:= linux;
+                                       Type =:= freebsd ->
     F = fun([Filesystem, Blocks, Used, Available, UsePer, MountedOn]) ->
                 #disk_data{filesystem = Filesystem,
                            blocks    = list_to_integer(Blocks),
@@ -160,7 +161,6 @@ get_disk_data({unix,linux}, RetL) ->
                            mounted_on = MountedOn}
         end,
     [ F(Row) || Row <- RetL ];
-%% @TODO For FreeBSD
 %% @TODO For Solaris/SmartOS
 get_disk_data(_,_) ->
     [].
