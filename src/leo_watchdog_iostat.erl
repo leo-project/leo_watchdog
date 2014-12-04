@@ -177,6 +177,31 @@ disk_stats({unix, linux}, TargetDevices) ->
             get_target_values(TargetDevices, Tokens_2, PosOfItems)
     end;
 
+disk_stats({unix, freebsd}, TargetDevices) ->
+    case os:cmd("which iostat") of
+        [] ->
+            #disk_stat{};
+        _ ->
+            %% Execute os-command
+            CmdRet = os:cmd("iostat -x 1 2"),
+
+            %% Parsing result of os-command
+            Tokens_1 = string:tokens(
+                         string:substr(
+                           CmdRet,
+                           string:rstr(CmdRet, "device")), "\n"),
+            HeaderTokens = string:tokens(hd(Tokens_1), " "),
+            {_, PosOfItems} =
+                lists:foldl(fun("kr/s", {Idx, SoFar}) -> {Idx+1, [{rkb, Idx}|SoFar]};
+                               ("kw/s", {Idx, SoFar}) -> {Idx+1, [{wkb, Idx}|SoFar]};
+                               ("%b",   {Idx, SoFar}) -> {Idx+1, [{util,Idx}|SoFar]};
+                               (_, {Idx, SoFar}) -> {Idx+1, SoFar}
+                            end, {1,[]}, HeaderTokens),
+
+            %% Retrieving data
+            [_|Tokens_2] = Tokens_1,
+            get_target_values(TargetDevices, Tokens_2, PosOfItems)
+    end;
 disk_stats({unix, darwin},_TargetDevices) ->
     #disk_stat{};
 
@@ -208,9 +233,9 @@ get_target_values_1([Items|Rest], PosOfItems, SoFar) ->
 
     Tokens = string:tokens(Items, " "),
     DevName = lists:nth(1, Tokens),
-    RkbVal  = get_item(float, RkbPos,  Tokens),
-    WkbVal  = get_item(float, WkbPos,  Tokens),
-    UtilVal = get_item(float, UtilPos, Tokens),
+    RkbVal  = get_item(RkbPos,  Tokens),
+    WkbVal  = get_item(WkbPos,  Tokens),
+    UtilVal = get_item(UtilPos, Tokens),
 
     get_target_values_1(Rest, PosOfItems,
                        [{DevName, #disk_stat{util = UtilVal,
@@ -218,6 +243,14 @@ get_target_values_1([Items|Rest], PosOfItems, SoFar) ->
                                              wkb = WkbVal}}|SoFar]).
 
 %% @private
+get_item(KeyPos, Values) ->
+    case string:chr(lists:nth(KeyPos, Values), $.) of
+        0 ->
+            get_item(integer, KeyPos, Values);
+        _ ->
+            get_item(float, KeyPos, Values)
+    end.
+            
 get_item(_,undefined,_) ->
     0;
 get_item(_, KeyPos, Values) when KeyPos > length(Values) ->
