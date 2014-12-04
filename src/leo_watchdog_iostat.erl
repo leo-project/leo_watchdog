@@ -157,7 +157,7 @@ disk_stats({unix, linux}, TargetDevices) ->
             #disk_stat{};
         _ ->
             %% Execute os-command
-            CmdRet = os:cmd("iostat -x 1 2"),
+            CmdRet = os:cmd("iostat -kx 1 2"),
 
             %% Parsing result of os-command
             Tokens_1 = string:tokens(
