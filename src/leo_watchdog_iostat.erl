@@ -177,7 +177,8 @@ disk_stats({unix, linux}, TargetDevices) ->
             get_target_values(TargetDevices, Tokens_2, PosOfItems)
     end;
 
-disk_stats({unix, freebsd}, TargetDevices) ->
+disk_stats({unix, Type}, TargetDevices) when Type =:= freebsd;
+                                             Type =:= sunos ->
     case os:cmd("which iostat") of
         [] ->
             #disk_stat{};
@@ -205,8 +206,7 @@ disk_stats({unix, freebsd}, TargetDevices) ->
 disk_stats({unix, darwin},_TargetDevices) ->
     #disk_stat{};
 
-%% @TODO solaris/smartos
-%% @TODO freebsd
+%% Other OSes not supporeted
 disk_stats(_,_) ->
     #disk_stat{}.
 
