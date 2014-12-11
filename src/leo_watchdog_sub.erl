@@ -133,12 +133,12 @@ handle_info(timeout, #state{id = Id,
                             max_safe_times = MaxSafeTimes} = State) ->
     SafeTimes_1 = case (MaxSafeTimes =< SafeTimes) of
                       true ->
+                          catch erlang:apply(Mod, handle_notify,
+                                             [Id, [], MaxSafeTimes,leo_date:unixtime()]),
                           1;
                       false ->
                           SafeTimes + 1
                   end,
-    catch erlang:apply(Mod, handle_notify,
-                       [Id, [], SafeTimes_1, leo_date:unixtime()]),
     {noreply, State#state{consecutive_safe_times = SafeTimes_1}, ?DEF_TIMEOUT};
 handle_info({elarm, _Ref, Alarm}, #state{id = Id,
                                          callback_mod = Mod} = State) ->

@@ -135,6 +135,16 @@ handle_call(Id, #state{threshold_load_avg = ThresholdLoadAvg,
                                                                {?WD_ITEM_LOAD_AVG_5M, AVG_5}
                                                               ]}),
                           ErrorLevel;
+                      false when (ThresholdLoadAvg * 80 < AVG_1 orelse
+                                  ThresholdLoadAvg * 80 < AVG_5) ->
+                          elarm:raise(Id, ?WD_ITEM_LOAD_AVG,
+                                      #watchdog_state{id = Id,
+                                                      level = ?WD_LEVEL_WARN,
+                                                      src   = ?WD_ITEM_LOAD_AVG,
+                                                      props = [{?WD_ITEM_LOAD_AVG_1M, AVG_1},
+                                                               {?WD_ITEM_LOAD_AVG_5M, AVG_5}
+                                                              ]}),
+                          ?WD_LEVEL_WARN;
                       false ->
                           elarm:clear(Id, ?WD_ITEM_LOAD_AVG),
                           ?WD_LEVEL_SAFE
