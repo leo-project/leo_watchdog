@@ -109,6 +109,11 @@ handle_info(timeout, #state{id = Id,
     Props_1 = case catch erlang:apply(
                            CallbackMod, handle_call, [Id, Props]) of
                   {'EXIT', Cause} ->
+                      error_logger:error_msg(
+                        "~p,~p,~p,~p~n",
+                        [{module, ?MODULE_STRING},
+                         {function, "handle_info/2"},
+                         {line, ?LINE}, {body, {CallbackMod, Cause}}]),
                       case catch erlang:apply(
                                    CallbackMod, handle_fail, [Id, Cause]) of
                           {'EXIT', Reason} ->
