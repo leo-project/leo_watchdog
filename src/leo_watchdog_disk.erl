@@ -88,13 +88,13 @@ start_link(TargetPaths, ThresholdDiskUse, ThresholdDiskUtil, IntervalTime) ->
 
 
 %% @doc Start the server
--spec(start_link(TargetPaths, ThresholdDiskUse,
-                 TargetDevices, ThresholdDiskUtil,
+-spec(start_link(TargetPaths, TargetDevices,
+                 ThresholdDiskUse, ThresholdDiskUtil,
                  ThresholdRkb, ThresholdWkb,
                  RaisedErrorTimes, IntervalTime) ->
              {ok,Pid} | ignore | {error,Error} when TargetPaths::[string()],
-                                                    ThresholdDiskUse::non_neg_integer(),
                                                     TargetDevices::[string()],
+                                                    ThresholdDiskUse::non_neg_integer(),
                                                     ThresholdDiskUtil::float(),
                                                     ThresholdRkb::float(),
                                                     ThresholdWkb::float(),
@@ -102,8 +102,8 @@ start_link(TargetPaths, ThresholdDiskUse, ThresholdDiskUtil, IntervalTime) ->
                                                     IntervalTime::pos_integer(),
                                                     Pid::pid(),
                                                     Error::{already_started,Pid} | term()).
-start_link(TargetPaths, ThresholdDiskUse,
-           TargetDevices, ThresholdDiskUtil,
+start_link(TargetPaths, TargetDevices,
+           ThresholdDiskUse, ThresholdDiskUtil,
            ThresholdRkb, ThresholdWkb, RaisedErrorTimes, IntervalTime) ->
     leo_watchdog:start_link(?MODULE, ?MODULE,
                             #state{id = ?MODULE,

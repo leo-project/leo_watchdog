@@ -28,6 +28,7 @@
 
 -behaviour(application).
 
+-include("leo_watchdog.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 %% Application and Supervisor callbacks
@@ -42,7 +43,60 @@ start(_Type, _Args) ->
     application:start(sasl),
     application:start(os_mon),
     application:start(elarm),
-    leo_watchdog_sup:start_link().
+
+    case leo_watchdog_sup:start_link() of
+        {ok, Pid} ->
+            %% Watchdog for rex's binary usage
+            MaxMemCapacity = ?env_wd_threshold_mem_capacity(),
+            IntervalRex = ?env_wd_rex_interval(),
+            leo_watchdog_sup:start_child(
+              rex, [MaxMemCapacity], IntervalRex),
+
+            %% Wachdog for CPU
+            case ?env_wd_cpu_enabled() of
+                true ->
+                    MaxCPULoadAvg = ?env_wd_threshold_cpu_load_avg(),
+                    MaxCPUUtil    = ?env_wd_threshold_cpu_util(),
+                    IntervalCpu   = ?env_wd_cpu_interval(),
+                    leo_watchdog_sup:start_child(
+                      cpu, [MaxCPULoadAvg, MaxCPUUtil], IntervalCpu);
+                false ->
+                    void
+            end,
+
+            %% Wachdog for IO
+            case ?env_wd_io_enabled() of
+                true ->
+                    MaxInput    = ?env_wd_threshold_input_per_sec(),
+                    MaxOutput   = ?env_wd_threshold_output_per_sec(),
+                    IntervalIo  = ?env_wd_io_interval(),
+                    leo_watchdog_sup:start_child(
+                      io, [MaxInput, MaxOutput], IntervalIo);
+                false ->
+                    void
+            end,
+
+            %% Wachdog for Disk
+            case ?env_wd_disk_enabled() of
+                true ->
+                    leo_watchdog_sup:start_child(
+                      disk, [?env_wd_disk_target_paths(),
+                             ?env_wd_disk_target_devices(),
+                             ?env_wd_threshold_disk_use(),
+                             ?env_wd_threshold_disk_util(),
+                             ?env_wd_threshold_disk_rkb(),
+                             ?env_wd_threshold_disk_wkb(),
+                             ?env_wd_disk_raised_error_times()
+                            ],
+                      ?env_wd_disk_interval());
+                false ->
+                    void
+            end,
+            {ok, Pid};
+        Other ->
+            Other
+    end.
+
 
 prep_stop(_State) ->
     ok.

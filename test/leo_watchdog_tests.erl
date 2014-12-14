@@ -47,7 +47,11 @@ handle_notify(Id, [], SafeTimes, Unixtime) ->
 suite_test_() ->
     {setup,
      fun ( ) ->
-             application:start(leo_watchdog),
+             application:start(sasl),
+             application:start(os_mon),
+             application:start(elarm),
+             leo_watchdog_sup:start_link(),
+
              Interval = 3,
              MaxMemForBin = 1024 * 1024 * 32,
              MaxLoadAvg  = 2,

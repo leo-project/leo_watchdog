@@ -68,8 +68,8 @@
 -define(DEF_OUTPUT_PER_SEC, 134217728). %% 128MB
 -define(DEF_DISK_USE,       85).
 -define(DEF_DISK_UTIL,      95.0).
--define(DEF_DISK_READ_KB,   65536). %% 64MB
--define(DEF_DISK_WRITE_KB,  65536). %% 64MB
+-define(DEF_DISK_READ_KB,   262144). %% 262144KB (256MB)
+-define(DEF_DISK_WRITE_KB,  262144). %% 262144KB (256MB)
 -define(DEF_RAISED_ERROR_TIMES, 3).
 -define(DEF_CHECK_INTERVAL, 1). %% 1sec
 
@@ -118,24 +118,24 @@
 %% ---------------------------------------------------------------------
 %%
 %% @doc Watchdog - rex - Is enabled
--define(env_wd_rex_enabled(App),
-        case application:get_env(App, wd_rex_enabled) of
+-define(env_wd_rex_enabled(),
+        case application:get_env(leo_watchdog, wd_rex_enabled) of
             {ok, EnvWDRexEnabled} ->
                 EnvWDRexEnabled;
             _ ->
                 true
         end).
 %% @doc Watchdog - rex - interval
--define(env_wd_rex_interval(App),
-        case application:get_env(App, wd_rex_interval) of
+-define(env_wd_rex_interval(),
+        case application:get_env(leo_watchdog, wd_rex_interval) of
             {ok, EnvWDRexInterval} ->
                 EnvWDRexInterval;
             _ ->
                 ?DEF_WATCH_INTERVAL
         end).
 %% @doc Watchdog - rex - threshold memory capacity for binary
--define(env_wd_threshold_mem_capacity(App),
-        case application:get_env(App, wd_threshold_mem_capacity) of
+-define(env_wd_threshold_mem_capacity(),
+        case application:get_env(leo_watchdog, wd_threshold_mem_capacity) of
             {ok, EnvWDThresholdMemCapacity} ->
                 EnvWDThresholdMemCapacity;
             _ ->
@@ -146,24 +146,24 @@
 %% CPU
 %% ---------------------------------------------------------------------
 %% @doc Watchdog - cpu - is enabled
--define(env_wd_cpu_enabled(App),
-        case application:get_env(App, wd_cpu_enabled) of
+-define(env_wd_cpu_enabled(),
+        case application:get_env(leo_watchdog, wd_cpu_enabled) of
             {ok, EnvWDCpuEnabled} ->
                 EnvWDCpuEnabled;
             _ ->
                 true
         end).
 %% @doc Watchdog - cpu - interval
--define(env_wd_cpu_interval(App),
-        case application:get_env(App, wd_cpu_interval) of
+-define(env_wd_cpu_interval(),
+        case application:get_env(leo_watchdog, wd_cpu_interval) of
             {ok, EnvWDCpuInterval} ->
                 EnvWDCpuInterval;
             _ ->
                 ?DEF_WATCH_INTERVAL
         end).
 %% @doc Watchdog - cpu - threshold cpu load avg
--define(env_wd_threshold_cpu_load_avg(App),
-        case application:get_env(App, wd_threshold_cpu_load_avg) of
+-define(env_wd_threshold_cpu_load_avg(),
+        case application:get_env(leo_watchdog, wd_threshold_cpu_load_avg) of
             {ok, EnvWDThresholdCpuLoadAvg} when is_number(EnvWDThresholdCpuLoadAvg) ->
                 EnvWDThresholdCpuLoadAvg;
             {ok, EnvWDThresholdCpuLoadAvg} ->
@@ -175,16 +175,16 @@
                 ?DEF_CPU_LOAD_AVG
         end).
 %% @doc Watchdog - cpu - threshold cpu util
--define(env_wd_threshold_cpu_util(App),
-        case application:get_env(App, wd_threshold_cpu_util) of
+-define(env_wd_threshold_cpu_util(),
+        case application:get_env(leo_watchdog, wd_threshold_cpu_util) of
             {ok, EnvWDThresholdCpuUtil} ->
                 EnvWDThresholdCpuUtil;
             _ ->
                 ?DEF_CPU_UTIL
         end).
 %% @doc Watchdog - cpu - raised error times
--define(env_wd_cpu_raised_error_times(App),
-        case application:get_env(App, wd_cpu_raised_error_times) of
+-define(env_wd_cpu_raised_error_times(),
+        case application:get_env(leo_watchdog, wd_cpu_raised_error_times) of
             {ok, EnvRaisedCPUErrorTimes} ->
                 EnvRaisedCPUErrorTimes;
             _ ->
@@ -195,32 +195,32 @@
 %% IO
 %% ---------------------------------------------------------------------
 %% @doc Watchdog - io - Is enabled
--define(env_wd_io_enabled(App),
-        case application:get_env(App, wd_io_enabled) of
+-define(env_wd_io_enabled(),
+        case application:get_env(leo_watchdog, wd_io_enabled) of
             {ok, EnvWDIOEnabled} ->
                 EnvWDIOEnabled;
             _ ->
                 true
         end).
 %% @doc Watchdog - io - interval
--define(env_wd_io_interval(App),
-        case application:get_env(App, wd_io_interval) of
+-define(env_wd_io_interval(),
+        case application:get_env(leo_watchdog, wd_io_interval) of
             {ok, EnvWDIoInterval} ->
                 EnvWDIoInterval;
             _ ->
                 ?DEF_WATCH_INTERVAL
         end).
 %% @doc Watchdog - io - threshold input/sec
--define(env_wd_threshold_input_per_sec(App),
-        case application:get_env(App, wd_threshold_input_per_sec) of
+-define(env_wd_threshold_input_per_sec(),
+        case application:get_env(leo_watchdog, wd_threshold_input_per_sec) of
             {ok, EnvWDThresholdInputPerSec} ->
                 EnvWDThresholdInputPerSec;
             _ ->
                 ?DEF_INPUT_PER_SEC
         end).
 %% @doc Watchdog - io - threshold output/sec
--define(env_wd_threshold_output_per_sec(App),
-        case application:get_env(App, wd_threshold_output_per_sec) of
+-define(env_wd_threshold_output_per_sec(),
+        case application:get_env(leo_watchdog, wd_threshold_output_per_sec) of
             {ok, EnvWDThresholdOutputPerSec} ->
                 EnvWDThresholdOutputPerSec;
             _ ->
@@ -232,55 +232,71 @@
 %% DISK
 %% ---------------------------------------------------------------------
 %% @doc Watchdog - disk - Is enabled
--define(env_wd_disk_enabled(App),
-        case application:get_env(App, wd_disk_enabled) of
+-define(env_wd_disk_enabled(),
+        case application:get_env(leo_watchdog, wd_disk_enabled) of
             {ok, EnvWDDiskEnabled} ->
                 EnvWDDiskEnabled;
             _ ->
                 true
         end).
 %% @doc Watchdog - disk - interval
--define(env_wd_disk_interval(App),
-        case application:get_env(App, wd_disk_interval) of
+-define(env_wd_disk_interval(),
+        case application:get_env(leo_watchdog, wd_disk_interval) of
             {ok, EnvWDDiskInterval} ->
                 EnvWDDiskInterval;
             _ ->
                 ?DEF_WATCH_INTERVAL
         end).
 %% @doc Watchdog - disk - raised error times
--define(env_wd_disk_raised_error_times(App),
-        case application:get_env(App, wd_disk_raised_error_times) of
+-define(env_wd_disk_raised_error_times(),
+        case application:get_env(leo_watchdog, wd_disk_raised_error_times) of
             {ok, EnvRaisedDiskErrorTimes} ->
                 EnvRaisedDiskErrorTimes;
             _ ->
                 ?DEF_RAISED_ERROR_TIMES
         end).
+%% @doc Watchdog - disk - target paths
+-define(env_wd_disk_target_paths(),
+        case application:get_env(leo_watchdog, wd_disk_target_paths) of
+            {ok, EnvDiskTargetPaths} ->
+                EnvDiskTargetPaths;
+            _ ->
+                ["/"]
+        end).
+%% @doc Watchdog - disk - target devices
+-define(env_wd_disk_target_devices(),
+        case application:get_env(leo_watchdog, wd_disk_target_devices) of
+            {ok, EnvDiskTargetDevices} ->
+                EnvDiskTargetDevices;
+            _ ->
+                []
+        end).
 %% @doc Watchdog - disk - threshold iowait
--define(env_wd_threshold_disk_use(App),
-        case application:get_env(App, wd_threshold_disk_use) of
+-define(env_wd_threshold_disk_use(),
+        case application:get_env(leo_watchdog, wd_threshold_disk_use) of
             {ok, EnvWDThresholdIoWait} ->
                 EnvWDThresholdIoWait;
             _ ->
                 ?DEF_DISK_USE
         end).
 %% @doc Watchdog - disk - threshold disk utilization
--define(env_wd_threshold_disk_util(App),
-        case application:get_env(App, wd_threshold_disk_util) of
+-define(env_wd_threshold_disk_util(),
+        case application:get_env(leo_watchdog, wd_threshold_disk_util) of
             {ok, EnvWDThresholdDiskUtil} ->
                 EnvWDThresholdDiskUtil;
             _ ->
                 ?DEF_DISK_UTIL
         end).
 %% @doc Watchdog - disk - read kb/sec
--define(env_wd_threshold_disk_rkb(App),
-        case application:get_env(App, wd_threshold_disk_rkb) of
+-define(env_wd_threshold_disk_rkb(),
+        case application:get_env(leo_watchdog, wd_threshold_disk_rkb) of
             {ok, EnvWDThresholdRkb} ->
                 EnvWDThresholdRkb;
             _ ->
                 ?DEF_DISK_READ_KB
         end).
--define(env_wd_threshold_disk_wkb(App),
-        case application:get_env(App, wd_threshold_disk_wkb) of
+-define(env_wd_threshold_disk_wkb(),
+        case application:get_env(leo_watchdog, wd_threshold_disk_wkb) of
             {ok, EnvWDThresholdWkb} ->
                 EnvWDThresholdWkb;
             _ ->
