@@ -32,18 +32,18 @@
                  ]},
   {env, [
          %% watchdog for cpu
-         {wd_cpu_enabled, true},
-         {wd_cpu_interval, 5000},
-         {wd_threshold_cpu_load_avg, 5.0},
-         {wd_threshold_cpu_util, 100},
-         {wd_cpu_raised_error_times, 5},
+         {cpu_enabled, true},
+         {cpu_interval, 5000},
+         {cpu_threshold_load_avg, 5.0},
+         {cpu_threshold_util, 100},
+         {cpu_raised_error_times, 5},
          %% watchdog for disk
-         {wd_disk_enabled, true},
-         {wd_disk_interval, 5000},
-         {wd_threshold_disk_use, 80},
-         {wd_threshold_disk_util, 100},
-         {wd_threshold_disk_rkb, 262144},
-         {wd_threshold_disk_wkb, 262144},
-         {wd_disk_raised_error_times, 5}
+         {disk_enabled, true},
+         {disk_interval, 5000},
+         {disk_threshold_use, 80},
+         {disk_threshold_util, 100},
+         {disk_threshold_rkb, 262144},
+         {disk_threshold_wkb, 262144},
+         {disk_raised_error_times, 5}
         ]}
  ]}.
