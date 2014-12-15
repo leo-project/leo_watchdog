@@ -67,6 +67,7 @@ start_child(Type, Args, Interval) ->
             {error, Cause}
     end.
 
+
 %% @private
 child_spec(rex, Args, Interval) ->
     {leo_watchdog_rex,
@@ -95,7 +96,14 @@ child_spec(disk, Args, Interval) ->
      permanent,
      2000,
      worker,
-     [leo_watchdog_disk]}.
+     [leo_watchdog_disk]};
+child_spec(iostat, Args, Interval) ->
+    {leo_watchdog_iostat,
+     {leo_watchdog_iostat, start_link, Args ++ [Interval]},
+     permanent,
+     2000,
+     worker,
+     [leo_watchdog_iostat]}.
 
 
 %% @doc Creates the gen_server process as part of a supervision tree

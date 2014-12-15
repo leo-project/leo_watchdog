@@ -23,12 +23,27 @@
 {application, leo_watchdog,
  [
   {description, "leo_watchdog keep monitoring applications"},
-  {vsn, "0.4.1"},
+  {vsn, "0.6.0"},
   {mod, {leo_watchdog_app, []}},
   {registered, []},
   {applications, [
                   kernel,
                   stdlib
                  ]},
-  {env, []}
+  {env, [
+         %% watchdog for cpu
+         {cpu_enabled, true},
+         {cpu_interval, 5000},
+         {cpu_threshold_load_avg, 5.0},
+         {cpu_threshold_util, 100},
+         {cpu_raised_error_times, 5},
+         %% watchdog for disk
+         {disk_enabled, true},
+         {disk_interval, 5000},
+         {disk_threshold_use, 80},
+         {disk_threshold_util, 100},
+         {disk_threshold_rkb, 262144},
+         {disk_threshold_wkb, 262144},
+         {disk_raised_error_times, 5}
+        ]}
  ]}.

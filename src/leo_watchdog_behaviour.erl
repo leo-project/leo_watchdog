@@ -24,6 +24,9 @@
 -module(leo_watchdog_behaviour).
 -author('Yosuke Hara').
 
+-callback(init(State::tuple()) ->
+                 ok | {error, any()}).
+
 -callback(handle_call(Id::atom(), State::tuple()) ->
                  {ok, State::tuple()} | {{error, any()}, State::tuple()}).
 
