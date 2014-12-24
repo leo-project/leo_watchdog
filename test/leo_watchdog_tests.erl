@@ -31,7 +31,8 @@
 -ifdef(EUNIT).
 
 -export([handle_notify/3,
-         handle_notify/4
+         handle_notify/4,
+         check_cluster_members/0
         ]).
 handle_notify(Id, Alarm, Unixtime) ->
     ?debugVal({Id, Alarm, Unixtime}),
@@ -39,6 +40,10 @@ handle_notify(Id, Alarm, Unixtime) ->
 handle_notify(Id, [], SafeTimes, Unixtime) ->
     ?debugVal({Id, SafeTimes, Unixtime}),
     ok.
+
+check_cluster_members() ->
+    Level = erlang:phash2(leo_date:clock(), 100),
+    {ok, Level}.
 
 
 %%======================================================================
@@ -60,10 +65,11 @@ suite_test_() ->
              MaxOutput   = 64,
              MaxDiskUtil = 30,
              MaxIoWait   = 30,
-             ok = leo_watchdog_sup:start_child(rex,  [MaxMemForBin], Interval),
-             ok = leo_watchdog_sup:start_child(cpu,  [MaxLoadAvg, MaxCPUUtil], Interval),
-             ok = leo_watchdog_sup:start_child(io,   [MaxInput, MaxOutput], Interval),
-             ok = leo_watchdog_sup:start_child(disk, [["/"], MaxDiskUtil, MaxIoWait], Interval),
+             ok = leo_watchdog_sup:start_child(rex,     [MaxMemForBin], Interval),
+             ok = leo_watchdog_sup:start_child(cpu,     [MaxLoadAvg, MaxCPUUtil], Interval),
+             ok = leo_watchdog_sup:start_child(io,      [MaxInput, MaxOutput], Interval),
+             ok = leo_watchdog_sup:start_child(disk,    [["/"], MaxDiskUtil, MaxIoWait], Interval),
+             ok = leo_watchdog_sup:start_child(cluster, [{?MODULE, check_cluster_members, []}], Interval),
 
              ok = leo_watchdog_sup:start_subscriber(
                     'leo_watchdog_sub_io', [?WD_ITEM_IO], ?MODULE),
@@ -74,6 +80,8 @@ suite_test_() ->
                     'leo_watchdog_sub_disk', [?WD_ITEM_DISK_USE,
                                               ?WD_ITEM_DISK_UTIL,
                                               ?WD_ITEM_DISK_IO], ?MODULE),
+             ok = leo_watchdog_sup:start_subscriber(
+                    'leo_watchdog_sub_cluster', [?WD_ITEM_CLUSTER], ?MODULE),
              ok
      end,
      fun (_) ->

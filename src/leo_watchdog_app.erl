@@ -92,6 +92,16 @@ start(_Type, _Args) ->
                 false ->
                     void
             end,
+
+            %% Watchdog for Cluster
+            case ?env_wd_cluster_enabled() of
+                true ->
+                    leo_watchdog_sup:start_child(
+                      cluster, [?env_wd_cluster_check_state_of_members_mfa()],
+                      ?env_wd_cluster_interval());
+                false ->
+                    void
+            end,
             {ok, Pid};
         Other ->
             Other

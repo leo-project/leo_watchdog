@@ -103,7 +103,16 @@ child_spec(iostat, Args, Interval) ->
      permanent,
      2000,
      worker,
-     [leo_watchdog_iostat]}.
+     [leo_watchdog_iostat]};
+child_spec(cluster, Args, Interval) ->
+    {leo_watchdog_cluster,
+     {leo_watchdog_cluster, start_link, Args ++ [Interval]},
+     permanent,
+     2000,
+     worker,
+     [leo_watchdog_cluster]}.
+
+
 
 
 %% @doc Creates the gen_server process as part of a supervision tree

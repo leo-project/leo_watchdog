@@ -18,7 +18,7 @@
 %% specific language governing permissions and limitations
 %% under the License.
 %%
-%% @doc leo_watchdog for 'rex' process
+%% @doc leo_watchdog for Disk
 %% @reference
 %% @end
 %%======================================================================
