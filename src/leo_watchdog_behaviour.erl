@@ -34,4 +34,4 @@
                  ok | {error, any()}).
 
 -callback(state() ->
-                 {ok, State::[{atom(), any()}]}).
+                 {ok, State::[{atom(), any()}]}|not_found).

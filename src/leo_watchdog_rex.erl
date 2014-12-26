@@ -71,7 +71,7 @@ stop() ->
 
 %% @doc Retrieves state of the watchdog
 -spec(state() ->
-             {ok, State} when State::[{atom(), any()}]).
+             not_found).
 state() ->
     not_found.
 
