@@ -34,12 +34,15 @@
 %% API
 -export([start_link/3,
          start_link/4,
-         stop/0]).
+         stop/0,
+         state/0
+        ]).
 
 %% Callback
 -export([init/1,
          handle_call/2,
-         handle_fail/2]).
+         handle_fail/2
+        ]).
 
 -record(state, {
           threshold_load_avg = 0.0 :: float(),
@@ -87,6 +90,18 @@ start_link(ThresholdLoadAvg, ThresholdCPUUtil, RaisedErrorTimes, Interval) ->
              ok).
 stop() ->
     leo_watchdog:stop(?MODULE).
+
+
+%% @doc Retrieves state of the watchdog
+-spec(state() ->
+             {ok, State} when State::[{atom(), any()}]).
+state() ->
+    case ets:lookup(?MODULE, state) of
+        [] ->
+            not_found;
+        [State|_] ->
+            {ok, State}
+    end.
 
 
 %%--------------------------------------------------------------------

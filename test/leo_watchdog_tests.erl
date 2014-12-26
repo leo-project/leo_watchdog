@@ -103,9 +103,14 @@ suite() ->
     ?debugVal(leo_watchdog_state:find_not_safe_items()),
     not_found = leo_watchdog_state:find_not_safe_items(['leo_watchdog_io',
                                                         'leo_watchdog_disk',
-                                                        'leo_watchdog_cpu']),
+                                                        'leo_watchdog_cpu',
+                                                        'leo_watchdog_cluster'
+                                                       ]),
     ?debugVal(leo_watchdog_state:find_not_safe_items(['leo_watchdog_io'],
                                                      ?WD_LEVEL_WARN)),
+    {ok, CPUState}  = leo_watchdog_cpu:state(),
+    {ok, DiskState} = leo_watchdog_disk:state(),
+    ?debugVal({CPUState, DiskState}),
     ok.
 
 %% @private

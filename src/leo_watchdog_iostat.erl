@@ -93,8 +93,8 @@ get() ->
 %%--------------------------------------------------------------------
 %% @doc Initiates the server
 init([OSType, TargetDevices, Interval]) ->
-    _ = ets:new(?WD_TBL_IOSTAT, [named_table, set,
-                                 public, {read_concurrency, true}]),
+    ?WD_TBL_IOSTAT = ets:new(?WD_TBL_IOSTAT, [named_table, set,
+                                              public, {read_concurrency, true}]),
     {ok, #state{os_type = OSType,
                 devices = TargetDevices,
                 interval = Interval}, Interval}.
