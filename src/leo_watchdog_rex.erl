@@ -73,12 +73,7 @@ stop() ->
 -spec(state() ->
              {ok, State} when State::[{atom(), any()}]).
 state() ->
-    case ets:lookup(?MODULE, state) of
-        [] ->
-            not_found;
-        [State|_] ->
-            {ok, State}
-    end.
+    not_found.
 
 
 %%--------------------------------------------------------------------

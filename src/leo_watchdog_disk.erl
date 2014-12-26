@@ -133,7 +133,8 @@ state() ->
         [] ->
             not_found;
         [State|_] ->
-            {ok, State}
+            State_1 = lists:zip(record_info(fields, state),tl(tuple_to_list(State))),
+            {ok, State_1}
     end.
 
 
