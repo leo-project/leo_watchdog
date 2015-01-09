@@ -33,7 +33,9 @@
 
 %% API
 -export([start_link/2,
-         stop/0]).
+         stop/0,
+         state/0
+        ]).
 
 %% Callback
 -export([init/1,
@@ -65,6 +67,13 @@ start_link(MaxMemCapacity, IntervalTime) ->
              ok).
 stop() ->
     leo_watchdog:stop(?MODULE).
+
+
+%% @doc Retrieves state of the watchdog
+-spec(state() ->
+             not_found).
+state() ->
+    not_found.
 
 
 %%--------------------------------------------------------------------

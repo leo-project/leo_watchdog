@@ -33,7 +33,8 @@
 
 %% API
 -export([start_link/4,
-         stop/1]).
+         stop/1
+        ]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -77,6 +78,8 @@ stop(Id) ->
 %%--------------------------------------------------------------------
 %% @doc Initiates the server
 init([Id, CallbackMod, Props, Interval]) ->
+    Id = ets:new(Id, [named_table, set,
+                      public, {read_concurrency, true}]),
     ok = CallbackMod:init(Props),
     {ok, #state{id = Id,
                 callback_mod = CallbackMod,
@@ -127,6 +130,7 @@ handle_info(timeout, #state{id = Id,
                               NewProps
                       end;
                   {_Ret, NewProps} ->
+                      catch ets:insert(Id, NewProps),
                       NewProps
               end,
     {noreply, State#state{properties = Props_1}, Interval};

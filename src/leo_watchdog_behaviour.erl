@@ -32,3 +32,6 @@
 
 -callback(handle_fail(Id::atom(), Cause::any()) ->
                  ok | {error, any()}).
+
+-callback(state() ->
+                 {ok, State::[{atom(), any()}]}|not_found).

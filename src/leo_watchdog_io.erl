@@ -18,7 +18,7 @@
 %% specific language governing permissions and limitations
 %% under the License.
 %%
-%% @doc Watchdog for IO
+%% @doc Watchdog for Eralng-IO
 %% @reference
 %% @end
 %%======================================================================
@@ -33,7 +33,9 @@
 
 %% API
 -export([start_link/3,
-         stop/0]).
+         stop/0,
+         state/0
+        ]).
 
 %% Callback
 -export([init/1,
@@ -76,6 +78,19 @@ start_link(ThresholdInputPerSec, ThresholdOutputPerSec, Interval) ->
              ok).
 stop() ->
     leo_watchdog:stop(?MODULE).
+
+
+%% @doc Retrieves state of the watchdog
+-spec(state() ->
+             {ok, State} when State::[{atom(), any()}]).
+state() ->
+    case ets:lookup(?MODULE, state) of
+        [] ->
+            not_found;
+        [State|_] ->
+            State_1 = lists:zip(record_info(fields, state),tl(tuple_to_list(State))),
+            {ok, State_1}
+    end.
 
 
 %%--------------------------------------------------------------------

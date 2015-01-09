@@ -18,7 +18,7 @@
 %% specific language governing permissions and limitations
 %% under the License.
 %%
-%% @doc leo_watchdog for 'rex' process
+%% @doc leo_watchdog for Disk
 %% @reference
 %% @end
 %%======================================================================
@@ -34,15 +34,16 @@
 %% API
 -export([start_link/4,
          start_link/8,
-         stop/0]).
+         stop/0,
+         state/0,
+         disk_use/2,
+         get_disk_data/0
+        ]).
 
 %% Callback
 -export([init/1,
          handle_call/2,
-         handle_fail/2]).
-
--export([disk_use/2,
-         get_disk_data/0
+         handle_fail/2
         ]).
 
 -record(state, {
@@ -124,6 +125,19 @@ stop() ->
     leo_watchdog:stop(?MODULE).
 
 
+%% @doc Retrieves state of the watchdog
+-spec(state() ->
+             {ok, State}|not_found when State::[{atom(), any()}]).
+state() ->
+    case ets:lookup(?MODULE, state) of
+        [] ->
+            not_found;
+        [State|_] ->
+            State_1 = lists:zip(record_info(fields, state),tl(tuple_to_list(State))),
+            {ok, State_1}
+    end.
+
+
 %% @doc Retrieve disk data from os command
 -spec(get_disk_data() ->
              DiskData when DiskData::[#disk_data{}]).
@@ -165,6 +179,38 @@ get_disk_data({unix, Type}, RetL) when Type =:= linux;
 %% Other OSes not supported
 get_disk_data(_,_) ->
     [].
+
+
+%% @doc Check disk use%
+%% @private
+disk_use(Tokens, DiskData) ->
+    Len  = length(Tokens),
+    Path = case Tokens of
+               [] ->
+                   "/";
+               _ ->
+                   "/" ++ filename:join(Tokens)
+           end,
+    case disk_use_1(DiskData, Path) of
+        not_found when Len > 1 ->
+            disk_use(lists:sublist(Tokens, Len - 1), DiskData);
+        not_found ->
+            disk_use([], DiskData);
+        Ret ->
+            Ret
+    end.
+
+%% @private
+disk_use_1([],_) ->
+    not_found;
+disk_use_1([#disk_data{
+               blocks     = Blocks,
+               available  = Available,
+               mounted_on = Path} = Data|_], Path) ->
+    Data#disk_data{use_percentage =
+                       (100 - erlang:round(Available/Blocks * 100))};
+disk_use_1([_|Rest], Path) ->
+    disk_use_1(Rest, Path).
 
 
 %%--------------------------------------------------------------------
@@ -268,37 +314,6 @@ check(Id, [Path|Rest], #state{threshold_disk_use = ThresholdDiskUse} = State, Ac
                        {disk_data, DiskData_2}] | Acc ]
             end,
     check(Id, Rest, State, Acc_1).
-
-%% @doc Check disk use%
-%% @private
-disk_use(Tokens, DiskData) ->
-    Len  = length(Tokens),
-    Path = case Tokens of
-               [] ->
-                   "/";
-               _ ->
-                   "/" ++ filename:join(Tokens)
-           end,
-    case disk_use_1(DiskData, Path) of
-        not_found when Len > 1 ->
-            disk_use(lists:sublist(Tokens, Len - 1), DiskData);
-        not_found ->
-            disk_use([], DiskData);
-        Ret ->
-            Ret
-    end.
-
-%% @private
-disk_use_1([],_) ->
-    not_found;
-disk_use_1([#disk_data{
-               blocks     = Blocks,
-               available  = Available,
-               mounted_on = Path} = Data|_], Path) ->
-    Data#disk_data{use_percentage =
-                       (100 - erlang:round(Available/Blocks * 100))};
-disk_use_1([_|Rest], Path) ->
-    disk_use_1(Rest, Path).
 
 
 %% @doc Check disk util

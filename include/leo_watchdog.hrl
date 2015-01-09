@@ -1,6 +1,6 @@
 %%======================================================================
 %%
-%% Leo Ordning & Reda
+%% Leo Watchdog
 %%
 %% Copyright (c) 2012-2014 Rakuten, Inc.
 %%
@@ -86,6 +86,7 @@
 -define(WD_ITEM_DISK_IO,     'disk_io').
 -define(WD_ITEM_DISK_RKB,    'disk_rkb').
 -define(WD_ITEM_DISK_WKB,    'disk_wkb').
+-define(WD_ITEM_CLUSTER,     'cluster').
 
 -define(WD_GRP_CPU,  [?WD_ITEM_LOAD_AVG,
                       ?WD_ITEM_CPU_UTIL]).
@@ -93,7 +94,8 @@
                       ?WD_ITEM_DISK_UTIL,
                       ?WD_ITEM_DISK_IO
                      ]).
--define(WD_GRP_IO,   [?WD_ITEM_IO]).
+-define(WD_GRP_IO,     [?WD_ITEM_IO]).
+-define(WD_GRP_CLUSER, [?WD_ITEM_CLUSTER]).
 
 -define(WD_TBL_IOSTAT, 'leo_watchdog_iostat').
 
@@ -151,7 +153,7 @@
             {ok, EnvWDCpuEnabled} ->
                 EnvWDCpuEnabled;
             _ ->
-                true
+                false
         end).
 %% @doc Watchdog - cpu - interval
 -define(env_wd_cpu_interval(),
@@ -200,7 +202,7 @@
             {ok, EnvWDIOEnabled} ->
                 EnvWDIOEnabled;
             _ ->
-                true
+                false
         end).
 %% @doc Watchdog - io - interval
 -define(env_wd_io_interval(),
@@ -237,7 +239,7 @@
             {ok, EnvWDDiskEnabled} ->
                 EnvWDDiskEnabled;
             _ ->
-                true
+                false
         end).
 %% @doc Watchdog - disk - interval
 -define(env_wd_disk_interval(),
@@ -301,4 +303,33 @@
                 EnvWDThresholdWkb;
             _ ->
                 ?DEF_DISK_WRITE_KB
+        end).
+
+
+%% ---------------------------------------------------------------------
+%% CLUSTER
+%% ---------------------------------------------------------------------
+%% @doc Watchdog - cluster - Is enabled
+-define(env_wd_cluster_enabled(),
+        case application:get_env(leo_watchdog, cluster_enabled) of
+            {ok, EnvWDClusterEnabled} ->
+                EnvWDClusterEnabled;
+            _ ->
+                false
+        end).
+%% @doc Watchdog - cluster - interval
+-define(env_wd_cluster_interval(),
+        case application:get_env(leo_watchdog, cluster_interval) of
+            {ok, EnvWDClusterInterval} ->
+                EnvWDClusterInterval;
+            _ ->
+                ?DEF_WATCH_INTERVAL
+        end).
+%% @doc Watchdog - cluster - interval
+-define(env_wd_cluster_check_state_of_members_mfa(),
+        case application:get_env(leo_watchdog, cluster_check_state_of_members_mfa) of
+            {ok, EnvWDClusterStateOfMembersMFA} ->
+                EnvWDClusterStateOfMembersMFA;
+            _ ->
+                {undefind, undefined, []}
         end).
