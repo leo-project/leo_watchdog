@@ -64,11 +64,14 @@ suite_test_() ->
              MaxInput    = 64,
              MaxOutput   = 64,
              MaxDiskUtil = 30,
-             MaxIoWait   = 30,
+             MaxDiskUse  = 90,
+             MaxDiskRKB  = 512 * 1024 * 1024,
+             MaxDiskWKB  = 512 * 1024 * 1024,
+             MaxRaisedErrorTimes = 5,
              ok = leo_watchdog_sup:start_child(rex,     [MaxMemForBin], Interval),
              ok = leo_watchdog_sup:start_child(cpu,     [MaxLoadAvg, MaxCPUUtil], Interval),
              ok = leo_watchdog_sup:start_child(io,      [MaxInput, MaxOutput], Interval),
-             ok = leo_watchdog_sup:start_child(disk,    [["/"], MaxDiskUtil, MaxIoWait], Interval),
+             ok = leo_watchdog_sup:start_child(disk,    [["/"], [], MaxDiskUse, MaxDiskUtil, MaxDiskRKB, MaxDiskWKB, MaxRaisedErrorTimes], Interval),
              ok = leo_watchdog_sup:start_child(cluster, [{?MODULE, check_cluster_members, []}], Interval),
 
              ok = leo_watchdog_sup:start_subscriber(

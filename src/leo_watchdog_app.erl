@@ -47,10 +47,15 @@ start(_Type, _Args) ->
     case leo_watchdog_sup:start_link() of
         {ok, Pid} ->
             %% Watchdog for rex's binary usage
-            MaxMemCapacity = ?env_wd_threshold_mem_capacity(),
-            IntervalRex = ?env_wd_rex_interval(),
-            leo_watchdog_sup:start_child(
-              rex, [MaxMemCapacity], IntervalRex),
+            case ?env_wd_rex_enabled() of
+                true ->
+                    MaxMemCapacity = ?env_wd_threshold_mem_capacity(),
+                    IntervalRex = ?env_wd_rex_interval(),
+                    leo_watchdog_sup:start_child(
+                      rex, [MaxMemCapacity], IntervalRex);
+                false ->
+                    void
+            end,
 
             %% Wachdog for CPU
             case ?env_wd_cpu_enabled() of
