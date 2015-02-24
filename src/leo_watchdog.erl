@@ -127,7 +127,9 @@ handle_info(timeout, #state{id = Id,
                                  {line, ?LINE}, {body, {CallbackMod, Reason}}]),
                               Props;
                           {_, NewProps} ->
-                              NewProps
+                              NewProps;
+                          _ ->
+                              Props
                       end;
                   {_Ret, NewProps} ->
                       catch ets:insert(Id, NewProps),
