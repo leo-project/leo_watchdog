@@ -142,7 +142,7 @@ state() ->
 -spec(get_disk_data() ->
              DiskData when DiskData::[#disk_data{}]).
 get_disk_data() ->
-    Tokens_1 = string:tokens(os:cmd("df -lk"), "\n"),
+    Tokens_1 = string:tokens(os:cmd("df -lkP"), "\n"),
     Tokens_2 = lists:delete(hd(Tokens_1), Tokens_1),
     Tokens_3 = [ string:tokens(Row, " ") || Row <- Tokens_2 ],
     get_disk_data(os:type(), Tokens_3).

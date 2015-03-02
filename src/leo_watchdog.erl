@@ -119,15 +119,15 @@ handle_info(timeout, #state{id = Id,
                          {line, ?LINE}, {body, {CallbackMod, Cause}}]),
                       case catch erlang:apply(
                                    CallbackMod, handle_fail, [Id, Cause]) of
-                          {'EXIT', Reason} ->
+                          {_, Reason} ->
                               error_logger:info_msg(
                                 "~p,~p,~p,~p~n",
                                 [{module, ?MODULE_STRING},
                                  {function, "handle_info/2"},
                                  {line, ?LINE}, {body, {CallbackMod, Reason}}]),
                               Props;
-                          {_, NewProps} ->
-                              NewProps
+                          _ ->
+                              Props
                       end;
                   {_Ret, NewProps} ->
                       catch ets:insert(Id, NewProps),
