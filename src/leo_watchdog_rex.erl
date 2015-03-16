@@ -99,6 +99,11 @@ handle_call(_Id, #state{max_mem_capacity = MemCapacity} = State) ->
             {{error, not_running}, State};
         Pid ->
             BinaryMem = erlang:memory(binary),
+            error_logger:info_msg("~p,~p,~p,~p~n",
+                                  [{module, ?MODULE_STRING},
+                                   {function, "handle_call/2"},
+                                   {line, ?LINE},
+                                   {body, {MemCapacity, BinaryMem}}]),
             case (BinaryMem >= MemCapacity) of
                 true ->
                     erlang:garbage_collect(Pid);

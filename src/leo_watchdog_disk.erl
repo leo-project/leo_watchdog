@@ -339,6 +339,10 @@ disk_stats_1({ok, #disk_stat{util = Util,
                       true  -> ?WD_LEVEL_ERROR;
                       false -> ?WD_LEVEL_WARN
                   end,
+    error_logger:info_msg("~p,~p,~p,~p~n",
+                          [{module, ?MODULE_STRING},
+                           {function, "disk_stats_1/2"},
+                           {line, ?LINE}, {body, {ThresholdDiskUtil, Util}}]),
 
     State_1 = case (Util >  ThresholdDiskUtil) of
                   true ->
@@ -354,6 +358,13 @@ disk_stats_1({ok, #disk_stat{util = Util,
                       elarm:clear(Id, ?WD_ITEM_DISK_UTIL),
                       [{?WD_ITEM_DISK_UTIL, ?WD_LEVEL_SAFE}]
               end,
+
+    error_logger:info_msg("~p,~p,~p,~p~n",
+                          [{module, ?MODULE_STRING},
+                           {function, "disk_stats_1/2"},
+                           {line, ?LINE},
+                           {body, {(ThresholdRkb + ThresholdWkb), (Rkb + Wkb)}}]),
+
     State_2 = case ((Rkb + Wkb) > (ThresholdRkb + ThresholdWkb)) of
                   true ->
                       elarm:raise(

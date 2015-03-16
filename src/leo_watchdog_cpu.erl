@@ -139,6 +139,11 @@ handle_call(Id, #state{threshold_load_avg = ThresholdLoadAvg,
                          false -> ?WD_LEVEL_WARN
                      end,
 
+        error_logger:info_msg("~p,~p,~p,~p~n",
+                              [{module, ?MODULE_STRING},
+                               {function, "handle_call/2"},
+                               {line, ?LINE}, {body, {ThresholdLoadAvg, AVG_1, AVG_5}}]),
+
         %% Load avg
         Level_1 = case (ThresholdLoadAvg * 100 < AVG_1 orelse
                         ThresholdLoadAvg * 100 < AVG_5) of
@@ -165,6 +170,11 @@ handle_call(Id, #state{threshold_load_avg = ThresholdLoadAvg,
                           elarm:clear(Id, ?WD_ITEM_LOAD_AVG),
                           ?WD_LEVEL_SAFE
                       end,
+
+        error_logger:info_msg("~p,~p,~p,~p~n",
+                              [{module, ?MODULE_STRING},
+                               {function, "handle_call/2"},
+                               {line, ?LINE}, {body, {ThresholdCpuUtil, CPU_Util}}]),
 
         %% CPU util
         Level_2 = case (CPU_Util > ThresholdCpuUtil) of
