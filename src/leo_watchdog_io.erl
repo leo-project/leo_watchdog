@@ -124,6 +124,11 @@ handle_call(Id, #state{threshold_input   = ThresholdInput,
     ThresholdIO = erlang:round((ThresholdInput + ThresholdOutput)
                                * Interval / 1000),
 
+    error_logger:info_msg("~p,~p,~p,~p~n",
+                          [{module, ?MODULE_STRING},
+                           {function, "handle_call/2"},
+                           {line, ?LINE}, {body, {ThresholdIO, CurTotalIO}}]),
+
     case (CurTotalIO > ThresholdIO) of
         true ->
             elarm:raise(Id, ?WD_ITEM_IO,
