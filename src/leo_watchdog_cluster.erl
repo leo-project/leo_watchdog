@@ -109,17 +109,27 @@ handle_call(Id, #state{check_cluster_state_mfa = CheckClusterStateMFA} = State) 
         {Mod, Method, Args} ->
             case catch erlang:apply(Mod, Method, Args) of
                 {ok, Level} when Level >= ?WD_LEVEL_ERROR ->
+                    Props = [{level, Level}],
+                    error_logger:warning_msg("~p,~p,~p,~p~n",
+                                             [{module, ?MODULE_STRING},
+                                              {function, "handle_call/2"},{line, ?LINE},
+                                              {body, [{result, error}] ++ Props}]),
                     elarm:raise(Id, ?WD_ITEM_CLUSTER,
                                 #watchdog_state{id = Id,
                                                 level = Level,
                                                 src   = ?WD_ITEM_CLUSTER,
-                                                props = []});
+                                                props = Props});
                 {ok, Level} when Level >= ?WD_LEVEL_WARN ->
+                    Props = [{level, Level}],
+                    error_logger:warning_msg("~p,~p,~p,~p~n",
+                                             [{module, ?MODULE_STRING},
+                                              {function, "handle_call/2"},{line, ?LINE},
+                                              {body, [{result, warn}] ++ Props}]),
                     elarm:raise(Id, ?WD_ITEM_CLUSTER,
                                 #watchdog_state{id = Id,
                                                 level = Level,
                                                 src   = ?WD_ITEM_CLUSTER,
-                                                props = []});
+                                                props = Props});
                 {ok,_Level} ->
                     elarm:clear(Id, ?WD_ITEM_CLUSTER);
                 {_, Cause} ->
