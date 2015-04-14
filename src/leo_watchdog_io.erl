@@ -126,17 +126,21 @@ handle_call(Id, #state{threshold_input   = ThresholdInput,
 
     case (CurTotalIO > ThresholdIO) of
         true ->
+            Props = [{input,  DiffInput},
+                     {output, DiffOutput},
+                     {prev_input,  PrevInput},
+                     {prev_output, PrevOutput},
+                     {cur_input,   CurInput},
+                     {cur_output,  CurOutput}],
+            error_logger:warning_msg("~p,~p,~p,~p~n",
+                                     [{module, ?MODULE_STRING},
+                                      {function, "handle_call/2"},{line, ?LINE},
+                                      {body, [{result, error}] ++ Props}]),
             elarm:raise(Id, ?WD_ITEM_IO,
                         #watchdog_state{id = Id,
                                         level = ?WD_LEVEL_ERROR,
                                         src   = ?WD_ITEM_IO,
-                                        props = [{input,  DiffInput},
-                                                 {output, DiffOutput},
-                                                 {prev_input,  PrevInput},
-                                                 {prev_output, PrevOutput},
-                                                 {cur_input,   CurInput},
-                                                 {cur_output,  CurOutput}
-                                                ]});
+                                        props = Props});
         false ->
             elarm:clear(Id, ?WD_ITEM_IO)
     end,

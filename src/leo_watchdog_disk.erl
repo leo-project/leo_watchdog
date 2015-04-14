@@ -266,12 +266,17 @@ check(Id, [], #state{
                   ?WD_LEVEL_SAFE->
                       elarm:clear(Id, ?WD_ITEM_DISK_USE);
                   _ ->
+                      Props = [{?WD_ITEM_DISK_USE, D},
+                               {mounted_on, M}],
+                      error_logger:warning_msg("~p,~p,~p,~p~n",
+                                               [{module, ?MODULE_STRING},
+                                                {function, "handle_call/2"},{line, ?LINE},
+                                                {body, [{result, error}] ++ Props}]),
                       elarm:raise(Id, ?WD_ITEM_DISK_USE,
                                   #watchdog_state{id = Id,
                                                   level = L,
                                                   src   = M,
-                                                  props = [{?WD_ITEM_DISK_USE, D}
-                                                          ]})
+                                                  props = Props})
               end
       end, Acc),
 
@@ -340,30 +345,38 @@ disk_stats_1({ok, #disk_stat{util = Util,
                       false -> ?WD_LEVEL_WARN
                   end,
 
+    Props_1 = [{?WD_ITEM_DISK_UTIL, Util}],
     State_1 = case (Util >  ThresholdDiskUtil) of
                   true ->
+                      error_logger:warning_msg("~p,~p,~p,~p~n",
+                                               [{module, ?MODULE_STRING},
+                                                {function, "handle_call/2"},{line, ?LINE},
+                                                {body, [{result, error}] ++ Props_1}]),
                       elarm:raise(
                         Id, ?WD_ITEM_DISK_UTIL,
                         #watchdog_state{id = Id,
                                         level = ErrorLevel,
                                         src   = ?WD_ITEM_DISK_UTIL,
-                                        props = [{?WD_ITEM_DISK_UTIL, Util}
-                                                ]}),
+                                        props = Props_1}),
                       [{?WD_ITEM_DISK_UTIL, ErrorLevel}];
                   false ->
                       elarm:clear(Id, ?WD_ITEM_DISK_UTIL),
                       [{?WD_ITEM_DISK_UTIL, ?WD_LEVEL_SAFE}]
               end,
+    Props_2 = [{?WD_ITEM_DISK_RKB, Rkb},
+               {?WD_ITEM_DISK_WKB, Wkb}],
     State_2 = case ((Rkb + Wkb) > (ThresholdRkb + ThresholdWkb)) of
                   true ->
+                      error_logger:warning_msg("~p,~p,~p,~p~n",
+                                               [{module, ?MODULE_STRING},
+                                                {function, "handle_call/2"},{line, ?LINE},
+                                                {body, [{result, error}] ++ Props_2}]),
                       elarm:raise(
                         Id, ?WD_ITEM_DISK_IO,
                         #watchdog_state{id = Id,
                                         level = ErrorLevel,
                                         src   = ?WD_ITEM_DISK_IO,
-                                        props = [{?WD_ITEM_DISK_RKB, Rkb},
-                                                 {?WD_ITEM_DISK_WKB, Wkb}
-                                                ]}),
+                                        props = Props_2}),
                       [{?WD_ITEM_DISK_IO, ErrorLevel}|State_1];
                   false ->
                       elarm:clear(Id, ?WD_ITEM_DISK_IO),

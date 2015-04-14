@@ -238,9 +238,9 @@ get_target_values_1([Items|Rest], PosOfItems, SoFar) ->
     UtilVal = get_item(UtilPos, Tokens),
 
     get_target_values_1(Rest, PosOfItems,
-                       [{DevName, #disk_stat{util = UtilVal,
-                                             rkb = RkbVal,
-                                             wkb = WkbVal}}|SoFar]).
+                        [{DevName, #disk_stat{util = UtilVal,
+                                              rkb = RkbVal,
+                                              wkb = WkbVal}}|SoFar]).
 
 %% @private
 get_item(KeyPos, Values) ->
@@ -250,7 +250,7 @@ get_item(KeyPos, Values) ->
         _ ->
             get_item(float, KeyPos, Values)
     end.
-            
+
 get_item(_,undefined,_) ->
     0;
 get_item(_, KeyPos, Values) when KeyPos > length(Values) ->
