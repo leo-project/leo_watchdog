@@ -114,11 +114,23 @@
                            }
         end).
 
+%% ---------------------------------------------------------------------
+%% Subscriber
+%% ---------------------------------------------------------------------
+-define(MAX_SAFE_TIMES, 1).
+
+%% @doc Watchdog - rex - Is enabled
+-define(env_wd_subscriber_safe_times(),
+        case application:get_env(leo_watchdog, subscriber_safe_times) of
+            {ok, EnvWDSubSafeTimes} ->
+                EnvWDSubSafeTimes;
+            _ ->
+                ?MAX_SAFE_TIMES
+        end).
 
 %% ---------------------------------------------------------------------
 %% REX
 %% ---------------------------------------------------------------------
-%%
 %% @doc Watchdog - rex - Is enabled
 -define(env_wd_rex_enabled(),
         case application:get_env(leo_watchdog, rex_enabled) of
@@ -127,6 +139,7 @@
             _ ->
                 true
         end).
+
 %% @doc Watchdog - rex - interval
 -define(env_wd_rex_interval(),
         case application:get_env(leo_watchdog, rex_interval) of
@@ -135,6 +148,7 @@
             _ ->
                 ?DEF_WATCH_INTERVAL
         end).
+
 %% @doc Watchdog - rex - threshold memory capacity for binary
 -define(env_wd_threshold_mem_capacity(),
         case application:get_env(leo_watchdog, rex_threshold_mem_capacity) of
@@ -155,6 +169,7 @@
             _ ->
                 false
         end).
+
 %% @doc Watchdog - cpu - interval
 -define(env_wd_cpu_interval(),
         case application:get_env(leo_watchdog, cpu_interval) of
@@ -163,6 +178,7 @@
             _ ->
                 ?DEF_WATCH_INTERVAL
         end).
+
 %% @doc Watchdog - cpu - threshold cpu load avg
 -define(env_wd_threshold_cpu_load_avg(),
         case application:get_env(leo_watchdog, cpu_threshold_load_avg) of
@@ -176,6 +192,7 @@
             _ ->
                 ?DEF_CPU_LOAD_AVG
         end).
+
 %% @doc Watchdog - cpu - threshold cpu util
 -define(env_wd_threshold_cpu_util(),
         case application:get_env(leo_watchdog, cpu_threshold_util) of
@@ -184,6 +201,7 @@
             _ ->
                 ?DEF_CPU_UTIL
         end).
+
 %% @doc Watchdog - cpu - raised error times
 -define(env_wd_cpu_raised_error_times(),
         case application:get_env(leo_watchdog, cpu_raised_error_times) of
@@ -241,6 +259,7 @@
             _ ->
                 false
         end).
+
 %% @doc Watchdog - disk - interval
 -define(env_wd_disk_interval(),
         case application:get_env(leo_watchdog, disk_interval) of
@@ -249,6 +268,7 @@
             _ ->
                 ?DEF_WATCH_INTERVAL
         end).
+
 %% @doc Watchdog - disk - raised error times
 -define(env_wd_disk_raised_error_times(),
         case application:get_env(leo_watchdog, disk_raised_error_times) of
@@ -257,6 +277,7 @@
             _ ->
                 ?DEF_RAISED_ERROR_TIMES
         end).
+
 %% @doc Watchdog - disk - target paths
 -define(env_wd_disk_target_paths(),
         case application:get_env(leo_watchdog, disk_target_paths) of
@@ -265,6 +286,7 @@
             _ ->
                 ["/"]
         end).
+
 %% @doc Watchdog - disk - target devices
 -define(env_wd_disk_target_devices(),
         case application:get_env(leo_watchdog, disk_target_devices) of
@@ -273,6 +295,7 @@
             _ ->
                 []
         end).
+
 %% @doc Watchdog - disk - threshold iowait
 -define(env_wd_threshold_disk_use(),
         case application:get_env(leo_watchdog, disk_threshold_use) of
@@ -281,6 +304,7 @@
             _ ->
                 ?DEF_DISK_USE
         end).
+
 %% @doc Watchdog - disk - threshold disk utilization
 -define(env_wd_threshold_disk_util(),
         case application:get_env(leo_watchdog, disk_threshold_util) of
@@ -289,6 +313,7 @@
             _ ->
                 ?DEF_DISK_UTIL
         end).
+
 %% @doc Watchdog - disk - read kb/sec
 -define(env_wd_threshold_disk_rkb(),
         case application:get_env(leo_watchdog, disk_threshold_rkb) of
@@ -297,6 +322,8 @@
             _ ->
                 ?DEF_DISK_READ_KB
         end).
+
+%% @doc Watchdog - disk - write kb/sec
 -define(env_wd_threshold_disk_wkb(),
         case application:get_env(leo_watchdog, disk_threshold_wkb) of
             {ok, EnvWDThresholdWkb} ->
@@ -317,6 +344,7 @@
             _ ->
                 false
         end).
+
 %% @doc Watchdog - cluster - interval
 -define(env_wd_cluster_interval(),
         case application:get_env(leo_watchdog, cluster_interval) of
@@ -325,6 +353,7 @@
             _ ->
                 ?DEF_WATCH_INTERVAL
         end).
+
 %% @doc Watchdog - cluster - interval
 -define(env_wd_cluster_check_state_of_members_mfa(),
         case application:get_env(leo_watchdog, cluster_check_state_of_members_mfa) of

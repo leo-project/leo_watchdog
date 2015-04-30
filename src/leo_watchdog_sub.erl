@@ -42,8 +42,6 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
--define(MAX_SAFE_TIMES, 5).
-
 -record(state, {
           id :: atom(),
           filter :: [atom()]|[{atom(), any()}],
@@ -73,7 +71,8 @@ start_link(Id, CallbackMod) ->
                                                     Pid::pid(),
                                                     Error::{already_started,Pid} | term()).
 start_link(Id, Filters, CallbackMod) ->
-    start_link(Id, Filters, ?MAX_SAFE_TIMES, CallbackMod).
+    MaxSafeTimes = ?env_wd_subscriber_safe_times(),
+    start_link(Id, Filters, MaxSafeTimes, CallbackMod).
 
 -spec(start_link(Id, Filters, MaxSafeTimes, CallbackMod) ->
              {ok,Pid} | ignore | {error,Error} when Id::atom(),
