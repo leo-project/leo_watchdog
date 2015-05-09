@@ -2,7 +2,7 @@
 %%
 %% Leo Watchdog
 %%
-%% Copyright (c) 2012-2014 Rakuten, Inc.
+%% Copyright (c) 2012-2015 Rakuten, Inc.
 %%
 %% This file is provided to you under the Apache License,
 %% Version 2.0 (the "License"); you may not use this file
@@ -39,6 +39,7 @@
 
 %% Callback
 -export([init/1,
+         update_property/3,
          handle_call/2,
          handle_fail/2]).
 
@@ -91,6 +92,15 @@ state() ->
                                       Cause::any()).
 init(_State) ->
     ok.
+
+
+%% @doc Update the item's value
+-spec(update_property(Item, Value, State) ->
+             #state{} when Item::atom(),
+                           Value::any(),
+                           State::#state{}).
+update_property(_,_, State) ->
+    State.
 
 
 %% @dog Call execution of the watchdog

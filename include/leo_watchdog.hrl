@@ -19,14 +19,22 @@
 %% under the License.
 %%
 %%======================================================================
--author('Yosuke Hara').
-
+%%
+%% Basic constants
+%%
 -undef(DEF_WATCH_INTERVAL).
 -define(DEF_WATCH_INTERVAL, 5000).
 -undef(DEF_TIMEOUT).
 -define(DEF_TIMEOUT, 5000).
 
--type(watchdog_id() :: atom()).
+-define(WD_TARGET_CPU,     'cpu').
+-define(WD_TARGET_DISK,    'disk').
+-define(WD_TARGET_IO,      'io').
+-define(WD_TARGET_CLUSTER, 'cluster').
+-type(watchdog_target() :: ?WD_TARGET_CPU |
+                           ?WD_TARGET_DISK |
+                           ?WD_TARGET_IO |
+                           ?WD_TARGET_CLUSTER).
 
 -define(WD_LEVEL_SAFE,       0).
 -define(WD_LEVEL_WARN,      70).
@@ -37,14 +45,10 @@
                           ?WD_LEVEL_ERROR |
                           ?WD_LEVEL_CRITICAL).
 
--type(watchdog_src() :: string()|
-                        atom()|
-                        term()).
-
 -record(watchdog_state, {
-          id :: watchdog_id(),
+          id :: atom(),
           level = ?WD_LEVEL_SAFE :: non_neg_integer(),
-          src :: watchdog_src(),
+          src :: string()|atom()|term(),
           props = [] :: [{atom(), any()}]
          }).
 
@@ -55,12 +59,14 @@
          }).
 
 -record(watchdog_alarm, {
-          id :: watchdog_id(),
+          id :: atom(),
           state :: #watchdog_state{},
           event_time :: tuple()
          }).
 
-%% defalut constants
+%%
+%% Defalut constants
+%%
 -define(DEF_MEM_CAPACITY, 33554432).
 -define(DEF_CPU_LOAD_AVG, 100.0).
 -define(DEF_CPU_UTIL,      90.0).
@@ -73,8 +79,9 @@
 -define(DEF_RAISED_ERROR_TIMES, 3).
 -define(DEF_CHECK_INTERVAL, 1). %% 1sec
 
-
-%% watchdog-related constants
+%%
+%% Watchdog item's constants
+%%
 -define(WD_WARN_USE_PERCENTAGE, 80).
 -define(WD_ITEM_LOAD_AVG,    'load_avg').
 -define(WD_ITEM_LOAD_AVG_1M, 'load_avg_1m').
@@ -89,7 +96,8 @@
 -define(WD_ITEM_CLUSTER,     'cluster').
 
 -define(WD_GRP_CPU,  [?WD_ITEM_LOAD_AVG,
-                      ?WD_ITEM_CPU_UTIL]).
+                      ?WD_ITEM_CPU_UTIL
+                     ]).
 -define(WD_GRP_DISK, [?WD_ITEM_DISK_USE,
                       ?WD_ITEM_DISK_UTIL,
                       ?WD_ITEM_DISK_IO
@@ -100,7 +108,9 @@
 -define(WD_TBL_IOSTAT, 'leo_watchdog_iostat').
 
 
+%%
 %% macro - elarm#alarm{} to leo_watchdog#watchdog_alarm{}
+%%
 -define(to_watchdog_alarm(_Alarm),
         begin
             #alarm{alarm_id = _WatchdogId,
@@ -113,6 +123,7 @@
                                   calendar:datetime_to_gregorian_seconds(_EventTime))
                            }
         end).
+
 
 %% ---------------------------------------------------------------------
 %% Subscriber
