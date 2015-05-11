@@ -32,13 +32,13 @@
                  ]},
   {env, [
          %% watchdog for cpu
-         {cpu_enabled, true},
+         {cpu_enabled, false},
          {cpu_interval, 5000},
          {cpu_threshold_load_avg, 5.0},
          {cpu_threshold_util, 100},
          {cpu_raised_error_times, 5},
          %% watchdog for disk
-         {disk_enabled, true},
+         {disk_enabled, false},
          {disk_interval, 5000},
          {disk_threshold_use, 80},
          {disk_threshold_util, 100},

@@ -73,7 +73,7 @@ start(?WD_TARGET_CLUSTER = Target) ->
             leo_watchdog:resume(leo_watchdog_cluster)
     end;
 start(_) ->
-    ok.
+    {error, invalid_parameter}.
 
 %% @private
 start_1(?WD_TARGET_CPU) ->
@@ -100,7 +100,7 @@ start_1(?WD_TARGET_CLUSTER) ->
       cluster, [?env_wd_cluster_check_state_of_members_mfa()],
       ?env_wd_cluster_interval());
 start_1(_) ->
-    ok.
+    {error, invalid_parameter}.
 
 
 %% @doc Stop the watchdog
@@ -131,7 +131,7 @@ stop(?WD_TARGET_CLUSTER) ->
             leo_watchdog:suspend(leo_watchdog_cluster)
     end;
 stop(_) ->
-    ok.
+    {error, invalid_parameter}.
 
 
 %% @doc Set the raised error times
@@ -145,7 +145,7 @@ set_raised_error_times(?WD_TARGET_DISK, Value) when is_integer(Value) ->
     ok = application:set_env(leo_watchdog, disk_raised_error_times, Value),
     leo_watchdog:update_property(leo_watchdog_disk, raised_error_times, Value);
 set_raised_error_times(_,_) ->
-    ok.
+    {error, invalid_value}.
 
 
 %% @doc Set check interval of the watchdog
@@ -162,17 +162,17 @@ set_check_interval(?WD_TARGET_CLUSTER, Interval) when is_integer(Interval) ->
     ok = application:set_env(leo_watchdog, cluster_interval, Interval),
     leo_watchdog:set_interval(leo_watchdog_cluster, Interval);
 set_check_interval(_,_) ->
-    ok.
+    {error, invalid_value}.
 
 
 %% @doc Set cpu's threshold load average
 -spec(set_cpu_threshold_load_avg(Value) ->
-             ok | {error, any()} when Value::pos_integer()).
-set_cpu_threshold_load_avg(Value) when is_integer(Value) ->
+             ok | {error, any()} when Value::number()).
+set_cpu_threshold_load_avg(Value) when is_number(Value) ->
     ok = application:set_env(leo_watchdog, cpu_threshold_load_avg, Value),
     leo_watchdog:update_property(leo_watchdog_cpu, threshold_load_avg, Value);
 set_cpu_threshold_load_avg(_) ->
-    ok.
+    {error, invalid_value}.
 
 
 %% @doc Set cpu's threshold util
@@ -182,7 +182,7 @@ set_cpu_threshold_util(Value) when is_integer(Value) ->
     ok = application:set_env(leo_watchdog, cpu_threshold_util, Value),
     leo_watchdog:update_property(leo_watchdog_cpu, threshold_cpu_util, Value);
 set_cpu_threshold_util(_) ->
-    ok.
+    {error, invalid_value}.
 
 
 %% @doc Set disk's threshold use
@@ -192,7 +192,7 @@ set_disk_threshold_use(Value) when is_integer(Value) ->
     ok = application:set_env(leo_watchdog, disk_threshold_use, Value),
     leo_watchdog:update_property(leo_watchdog_disk, threshold_disk_use, Value);
 set_disk_threshold_use(_) ->
-    ok.
+    {error, invalid_value}.
 
 
 %% @doc Set disk's threshold util
@@ -202,7 +202,7 @@ set_disk_threshold_util(Value) when is_integer(Value) ->
     ok = application:set_env(leo_watchdog, disk_threshold_util, Value),
     leo_watchdog:update_property(leo_watchdog_disk, threshold_disk_util, Value);
 set_disk_threshold_util(_) ->
-    ok.
+    {error, invalid_value}.
 
 
 %% @doc Set disk's threshold read(kbytes)
@@ -212,7 +212,7 @@ set_disk_threshold_rkb(Value) when is_integer(Value) ->
     ok = application:set_env(leo_watchdog, disk_threshold_rkb, Value),
     leo_watchdog:update_property(leo_watchdog_disk, threshold_disk_rkb, Value);
 set_disk_threshold_rkb(_) ->
-    ok.
+    {error, invalid_value}.
 
 
 %% @doc Set disk's threshold write(kbytes)
@@ -222,4 +222,4 @@ set_disk_threshold_wkb(Value) when is_integer(Value) ->
     ok = application:set_env(leo_watchdog, disk_threshold_wkb, Value),
     leo_watchdog:update_property(leo_watchdog_disk, threshold_disk_wkb, Value);
 set_disk_threshold_wkb(_) ->
-    ok.
+    {error, invalid_value}.

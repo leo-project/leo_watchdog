@@ -72,9 +72,9 @@ start(_Type, _Args) ->
             %% Wachdog for IO
             case ?env_wd_io_enabled() of
                 true ->
-                    MaxInput    = ?env_wd_threshold_input_per_sec(),
-                    MaxOutput   = ?env_wd_threshold_output_per_sec(),
-                    IntervalIo  = ?env_wd_io_interval(),
+                    MaxInput   = ?env_wd_threshold_input_per_sec(),
+                    MaxOutput  = ?env_wd_threshold_output_per_sec(),
+                    IntervalIo = ?env_wd_io_interval(),
                     leo_watchdog_sup:start_child(
                       io, [MaxInput, MaxOutput], IntervalIo);
                 false ->
@@ -114,6 +114,7 @@ start(_Type, _Args) ->
 
 
 prep_stop(_State) ->
+    leo_watchdog_sup:stop(),
     ok.
 
 stop(_State) ->

@@ -34,7 +34,8 @@
 %% External API
 -export([start_link/0,
          start_child/3,
-         start_subscriber/3
+         start_subscriber/3,
+         stop/0
         ]).
 
 %% Callbacks
@@ -48,6 +49,18 @@
 %% @end
 start_link() ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+
+%% @doc Stop under processes of the supervisor when calling application's stop
+stop() ->
+    ok = stop_1(supervisor:which_children(?MODULE)),
+    ok.
+
+%% @private
+stop_1([]) ->
+    ok;
+stop_1([{NamedProc,_Pid,worker,_}|Rest]) ->
+    _ = leo_watchdog:stop(NamedProc),
+    stop_1(Rest).
 
 
 %%-----------------------------------------------------------------------

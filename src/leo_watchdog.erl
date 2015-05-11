@@ -37,7 +37,8 @@
          set_interval/2,
          update_property/3,
          suspend/1,
-         resume/1
+         resume/1,
+         state/1
         ]).
 
 %% gen_server callbacks
@@ -109,6 +110,14 @@ resume(Id) ->
     gen_server:call(Id, resume).
 
 
+%% @doc Retrieve the state
+-spec(state(Id) ->
+             {ok, State}  when Id::atom(),
+                               State::[{atom(), any()}]).
+state(Id) ->
+    gen_server:call(Id, state).
+
+
 %%--------------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
 %%--------------------------------------------------------------------
@@ -146,7 +155,12 @@ handle_call(resume,_From, #state{interval = Interval,
                                  is_suspending = false} = State) ->
     {reply, ok, State, Interval};
 handle_call(resume,_From, #state{interval = Interval} = State) ->
-    {reply, ok, State#state{is_suspending = false}, Interval}.
+    {reply, ok, State#state{is_suspending = false}, Interval};
+
+%% @doc Retrieve the state
+handle_call(state,_From, #state{interval = Interval} = State) ->
+    State_1 = lists:zip(record_info(fields, state),tl(tuple_to_list(State))),
+    {reply, {ok, State_1}, State, Interval}.
 
 
 %% @doc Handling cast message

@@ -148,7 +148,7 @@
             {ok, EnvWDRexEnabled} ->
                 EnvWDRexEnabled;
             _ ->
-                true
+                false
         end).
 
 %% @doc Watchdog - rex - interval

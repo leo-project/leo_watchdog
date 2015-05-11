@@ -130,12 +130,13 @@ stop() ->
 -spec(state() ->
              {ok, State}|not_found when State::[{atom(), any()}]).
 state() ->
-    case ets:lookup(?MODULE, state) of
-        [] ->
-            not_found;
-        [State|_] ->
-            State_1 = lists:zip(record_info(fields, state),tl(tuple_to_list(State))),
-            {ok, State_1}
+    case leo_watchdog:state(leo_watchdog_disk) of
+        {ok, State} ->
+            Props = leo_misc:get_value('properties', State),
+            Props_1 = lists:zip(record_info(fields, state),tl(tuple_to_list(Props))),
+            {ok, State ++ Props_1};
+        _ ->
+            not_found
     end.
 
 
