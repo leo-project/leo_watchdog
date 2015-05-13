@@ -2,7 +2,7 @@
 %%
 %% Leo Watchdog
 %%
-%% Copyright (c) 2012-2014 Rakuten, Inc.
+%% Copyright (c) 2012-2015 Rakuten, Inc.
 %%
 %% This file is provided to you under the Apache License,
 %% Version 2.0 (the "License"); you may not use this file
@@ -42,6 +42,7 @@
 
 %% Callback
 -export([init/1,
+         update_property/3,
          handle_call/2,
          handle_fail/2
         ]).
@@ -129,12 +130,13 @@ stop() ->
 -spec(state() ->
              {ok, State}|not_found when State::[{atom(), any()}]).
 state() ->
-    case ets:lookup(?MODULE, state) of
-        [] ->
-            not_found;
-        [State|_] ->
-            State_1 = lists:zip(record_info(fields, state),tl(tuple_to_list(State))),
-            {ok, State_1}
+    case leo_watchdog:state(leo_watchdog_disk) of
+        {ok, State} ->
+            Props = leo_misc:get_value('properties', State),
+            Props_1 = lists:zip(record_info(fields, state),tl(tuple_to_list(Props))),
+            {ok, State ++ Props_1};
+        _ ->
+            not_found
     end.
 
 
@@ -226,6 +228,25 @@ init(#state{target_devices = Devices}) ->
                          iostat, [os:type(), Devices], ?DEF_CHECK_INTERVAL)
           end),
     ok.
+
+
+%% @doc Update the item's value
+-spec(update_property(Item, Value, State) ->
+             #state{} when Item::atom(),
+                           Value::any(),
+                           State::#state{}).
+update_property(raised_error_times, Value, State) ->
+    State#state{raised_error_times = Value};
+update_property(threshold_disk_use, Value, State) ->
+    State#state{threshold_disk_use = Value};
+update_property(threshold_disk_util, Value, State) ->
+    State#state{threshold_disk_util = Value};
+update_property(threshold_disk_rkb, Value, State) ->
+    State#state{threshold_disk_rkb = Value};
+update_property(threshold_disk_wkb, Value, State) ->
+    State#state{threshold_disk_wkb = Value};
+update_property(_,_, State) ->
+    State.
 
 
 %% @dog Call execution of the watchdog

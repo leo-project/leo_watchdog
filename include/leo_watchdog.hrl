@@ -19,14 +19,22 @@
 %% under the License.
 %%
 %%======================================================================
--author('Yosuke Hara').
-
+%%
+%% Basic constants
+%%
 -undef(DEF_WATCH_INTERVAL).
 -define(DEF_WATCH_INTERVAL, 5000).
 -undef(DEF_TIMEOUT).
 -define(DEF_TIMEOUT, 5000).
 
--type(watchdog_id() :: atom()).
+-define(WD_TARGET_CPU,     'cpu').
+-define(WD_TARGET_DISK,    'disk').
+-define(WD_TARGET_IO,      'io').
+-define(WD_TARGET_CLUSTER, 'cluster').
+-type(watchdog_target() :: ?WD_TARGET_CPU |
+                           ?WD_TARGET_DISK |
+                           ?WD_TARGET_IO |
+                           ?WD_TARGET_CLUSTER).
 
 -define(WD_LEVEL_SAFE,       0).
 -define(WD_LEVEL_WARN,      70).
@@ -37,14 +45,10 @@
                           ?WD_LEVEL_ERROR |
                           ?WD_LEVEL_CRITICAL).
 
--type(watchdog_src() :: string()|
-                        atom()|
-                        term()).
-
 -record(watchdog_state, {
-          id :: watchdog_id(),
+          id :: atom(),
           level = ?WD_LEVEL_SAFE :: non_neg_integer(),
-          src :: watchdog_src(),
+          src :: string()|atom()|term(),
           props = [] :: [{atom(), any()}]
          }).
 
@@ -55,12 +59,14 @@
          }).
 
 -record(watchdog_alarm, {
-          id :: watchdog_id(),
+          id :: atom(),
           state :: #watchdog_state{},
           event_time :: tuple()
          }).
 
-%% defalut constants
+%%
+%% Defalut constants
+%%
 -define(DEF_MEM_CAPACITY, 33554432).
 -define(DEF_CPU_LOAD_AVG, 100.0).
 -define(DEF_CPU_UTIL,      90.0).
@@ -73,8 +79,9 @@
 -define(DEF_RAISED_ERROR_TIMES, 3).
 -define(DEF_CHECK_INTERVAL, 1). %% 1sec
 
-
-%% watchdog-related constants
+%%
+%% Watchdog item's constants
+%%
 -define(WD_WARN_USE_PERCENTAGE, 80).
 -define(WD_ITEM_LOAD_AVG,    'load_avg').
 -define(WD_ITEM_LOAD_AVG_1M, 'load_avg_1m').
@@ -89,7 +96,8 @@
 -define(WD_ITEM_CLUSTER,     'cluster').
 
 -define(WD_GRP_CPU,  [?WD_ITEM_LOAD_AVG,
-                      ?WD_ITEM_CPU_UTIL]).
+                      ?WD_ITEM_CPU_UTIL
+                     ]).
 -define(WD_GRP_DISK, [?WD_ITEM_DISK_USE,
                       ?WD_ITEM_DISK_UTIL,
                       ?WD_ITEM_DISK_IO
@@ -100,7 +108,9 @@
 -define(WD_TBL_IOSTAT, 'leo_watchdog_iostat').
 
 
+%%
 %% macro - elarm#alarm{} to leo_watchdog#watchdog_alarm{}
+%%
 -define(to_watchdog_alarm(_Alarm),
         begin
             #alarm{alarm_id = _WatchdogId,
@@ -116,17 +126,31 @@
 
 
 %% ---------------------------------------------------------------------
+%% Subscriber
+%% ---------------------------------------------------------------------
+-define(MAX_SAFE_TIMES, 1).
+
+%% @doc Watchdog - rex - Is enabled
+-define(env_wd_subscriber_safe_times(),
+        case application:get_env(leo_watchdog, subscriber_safe_times) of
+            {ok, EnvWDSubSafeTimes} ->
+                EnvWDSubSafeTimes;
+            _ ->
+                ?MAX_SAFE_TIMES
+        end).
+
+%% ---------------------------------------------------------------------
 %% REX
 %% ---------------------------------------------------------------------
-%%
 %% @doc Watchdog - rex - Is enabled
 -define(env_wd_rex_enabled(),
         case application:get_env(leo_watchdog, rex_enabled) of
             {ok, EnvWDRexEnabled} ->
                 EnvWDRexEnabled;
             _ ->
-                true
+                false
         end).
+
 %% @doc Watchdog - rex - interval
 -define(env_wd_rex_interval(),
         case application:get_env(leo_watchdog, rex_interval) of
@@ -135,6 +159,7 @@
             _ ->
                 ?DEF_WATCH_INTERVAL
         end).
+
 %% @doc Watchdog - rex - threshold memory capacity for binary
 -define(env_wd_threshold_mem_capacity(),
         case application:get_env(leo_watchdog, rex_threshold_mem_capacity) of
@@ -155,6 +180,7 @@
             _ ->
                 false
         end).
+
 %% @doc Watchdog - cpu - interval
 -define(env_wd_cpu_interval(),
         case application:get_env(leo_watchdog, cpu_interval) of
@@ -163,6 +189,7 @@
             _ ->
                 ?DEF_WATCH_INTERVAL
         end).
+
 %% @doc Watchdog - cpu - threshold cpu load avg
 -define(env_wd_threshold_cpu_load_avg(),
         case application:get_env(leo_watchdog, cpu_threshold_load_avg) of
@@ -176,6 +203,7 @@
             _ ->
                 ?DEF_CPU_LOAD_AVG
         end).
+
 %% @doc Watchdog - cpu - threshold cpu util
 -define(env_wd_threshold_cpu_util(),
         case application:get_env(leo_watchdog, cpu_threshold_util) of
@@ -184,6 +212,7 @@
             _ ->
                 ?DEF_CPU_UTIL
         end).
+
 %% @doc Watchdog - cpu - raised error times
 -define(env_wd_cpu_raised_error_times(),
         case application:get_env(leo_watchdog, cpu_raised_error_times) of
@@ -241,6 +270,7 @@
             _ ->
                 false
         end).
+
 %% @doc Watchdog - disk - interval
 -define(env_wd_disk_interval(),
         case application:get_env(leo_watchdog, disk_interval) of
@@ -249,6 +279,7 @@
             _ ->
                 ?DEF_WATCH_INTERVAL
         end).
+
 %% @doc Watchdog - disk - raised error times
 -define(env_wd_disk_raised_error_times(),
         case application:get_env(leo_watchdog, disk_raised_error_times) of
@@ -257,6 +288,7 @@
             _ ->
                 ?DEF_RAISED_ERROR_TIMES
         end).
+
 %% @doc Watchdog - disk - target paths
 -define(env_wd_disk_target_paths(),
         case application:get_env(leo_watchdog, disk_target_paths) of
@@ -265,6 +297,7 @@
             _ ->
                 ["/"]
         end).
+
 %% @doc Watchdog - disk - target devices
 -define(env_wd_disk_target_devices(),
         case application:get_env(leo_watchdog, disk_target_devices) of
@@ -273,6 +306,7 @@
             _ ->
                 []
         end).
+
 %% @doc Watchdog - disk - threshold iowait
 -define(env_wd_threshold_disk_use(),
         case application:get_env(leo_watchdog, disk_threshold_use) of
@@ -281,6 +315,7 @@
             _ ->
                 ?DEF_DISK_USE
         end).
+
 %% @doc Watchdog - disk - threshold disk utilization
 -define(env_wd_threshold_disk_util(),
         case application:get_env(leo_watchdog, disk_threshold_util) of
@@ -289,6 +324,7 @@
             _ ->
                 ?DEF_DISK_UTIL
         end).
+
 %% @doc Watchdog - disk - read kb/sec
 -define(env_wd_threshold_disk_rkb(),
         case application:get_env(leo_watchdog, disk_threshold_rkb) of
@@ -297,6 +333,8 @@
             _ ->
                 ?DEF_DISK_READ_KB
         end).
+
+%% @doc Watchdog - disk - write kb/sec
 -define(env_wd_threshold_disk_wkb(),
         case application:get_env(leo_watchdog, disk_threshold_wkb) of
             {ok, EnvWDThresholdWkb} ->
@@ -317,6 +355,7 @@
             _ ->
                 false
         end).
+
 %% @doc Watchdog - cluster - interval
 -define(env_wd_cluster_interval(),
         case application:get_env(leo_watchdog, cluster_interval) of
@@ -325,6 +364,7 @@
             _ ->
                 ?DEF_WATCH_INTERVAL
         end).
+
 %% @doc Watchdog - cluster - interval
 -define(env_wd_cluster_check_state_of_members_mfa(),
         case application:get_env(leo_watchdog, cluster_check_state_of_members_mfa) of

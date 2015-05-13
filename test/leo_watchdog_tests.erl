@@ -2,7 +2,7 @@
 %%
 %% Leo Watchdog
 %%
-%% Copyright (c) 2012-2014 Rakuten, Inc.
+%% Copyright (c) 2012-2015 Rakuten, Inc.
 %%
 %% This file is provided to you under the Apache License,
 %% Version 2.0 (the "License"); you may not use this file
@@ -111,9 +111,9 @@ suite() ->
                                                        ]),
     ?debugVal(leo_watchdog_state:find_not_safe_items(['leo_watchdog_io'],
                                                      ?WD_LEVEL_WARN)),
-    {ok, CPUState}  = leo_watchdog_cpu:state(),
-    {ok, DiskState} = leo_watchdog_disk:state(),
-    ?debugVal({CPUState, DiskState}),
+    Ret_1 = leo_watchdog_cpu:state(),
+    Ret_2 = leo_watchdog_disk:state(),
+    ?debugVal({Ret_1, Ret_2}),
     ok.
 
 %% @private

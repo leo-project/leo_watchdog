@@ -3,7 +3,7 @@
 %%
 %% Leo Watchdog
 %%
-%% Copyright (c) 2012-2014 Rakuten, Inc.
+%% Copyright (c) 2012-2015 Rakuten, Inc.
 %%
 %% This file is provided to you under the Apache License,
 %% Version 2.0 (the "License"); you may not use this file
@@ -23,7 +23,7 @@
 {application, leo_watchdog,
  [
   {description, "leo_watchdog keep monitoring applications"},
-  {vsn, "0.6.4"},
+  {vsn, "0.8.0"},
   {mod, {leo_watchdog_app, []}},
   {registered, []},
   {applications, [
@@ -32,13 +32,13 @@
                  ]},
   {env, [
          %% watchdog for cpu
-         {cpu_enabled, true},
+         {cpu_enabled, false},
          {cpu_interval, 5000},
          {cpu_threshold_load_avg, 5.0},
          {cpu_threshold_util, 100},
          {cpu_raised_error_times, 5},
          %% watchdog for disk
-         {disk_enabled, true},
+         {disk_enabled, false},
          {disk_interval, 5000},
          {disk_threshold_use, 80},
          {disk_threshold_util, 100},

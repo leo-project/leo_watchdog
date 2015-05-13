@@ -2,7 +2,7 @@
 %%
 %% Leo Watchdog
 %%
-%% Copyright (c) 2014 Rakuten, Inc.
+%% Copyright (c) 2012-2015 Rakuten, Inc.
 %%
 %% This file is provided to you under the Apache License,
 %% Version 2.0 (the "License"); you may not use this file
@@ -26,6 +26,9 @@
 
 -callback(init(State::tuple()) ->
                  ok | {error, any()}).
+
+-callback(update_property(Item::atom(), Value::any(), State::tuple()) ->
+                 State::tuple()).
 
 -callback(handle_call(Id::atom(), State::tuple()) ->
                  {ok, State::tuple()} | {{error, any()}, State::tuple()}).

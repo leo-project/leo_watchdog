@@ -2,7 +2,7 @@
 %%
 %% Leo Watchdog
 %%
-%% Copyright (c) 2012-2014 Rakuten, Inc.
+%% Copyright (c) 2012-2015 Rakuten, Inc.
 %%
 %% This file is provided to you under the Apache License,
 %% Version 2.0 (the "License"); you may not use this file
@@ -33,7 +33,12 @@
 
 %% API
 -export([start_link/4,
-         stop/1
+         stop/1,
+         set_interval/2,
+         update_property/3,
+         suspend/1,
+         resume/1,
+         state/1
         ]).
 
 %% gen_server callbacks
@@ -44,7 +49,8 @@
           id :: atom(),
           callback_mod :: module(),
           properties = [] :: [{atom(), any()}],
-          interval = ?DEF_WATCH_INTERVAL :: pos_integer()
+          interval = ?DEF_WATCH_INTERVAL :: pos_integer(),
+          is_suspending = false :: boolean()
          }).
 
 
@@ -73,6 +79,45 @@ stop(Id) ->
     gen_server:call(Id, stop).
 
 
+%% @doc Suspend the server
+-spec(set_interval(Id, Interval) ->
+             ok when Id::atom(),
+                     Interval::pos_integer()).
+set_interval(Id, Interval) ->
+    gen_server:call(Id, {set_interval, Interval}).
+
+
+%% @doc Suspend the server
+-spec(update_property(Id, Item, Value) ->
+             ok when Id::atom(),
+                     Item::atom(),
+                     Value::any()).
+update_property(Id, Item, Value) ->
+    gen_server:call(Id, {update_property, Item, Value}).
+
+
+%% @doc Suspend the server
+-spec(suspend(Id) ->
+             ok when Id::atom()).
+suspend(Id) ->
+    gen_server:call(Id, suspend).
+
+
+%% @doc Resume the server
+-spec(resume(Id) ->
+             ok when Id::atom()).
+resume(Id) ->
+    gen_server:call(Id, resume).
+
+
+%% @doc Retrieve the state
+-spec(state(Id) ->
+             {ok, State}  when Id::atom(),
+                               State::[{atom(), any()}]).
+state(Id) ->
+    gen_server:call(Id, state).
+
+
 %%--------------------------------------------------------------------
 %% GEN_SERVER CALLBACKS
 %%--------------------------------------------------------------------
@@ -86,10 +131,36 @@ init([Id, CallbackMod, Props, Interval]) ->
                 properties = Props,
                 interval = Interval}, Interval}.
 
-
 %% @doc gen_server callback - Module:handle_call(Request, From, State) -> Result
 handle_call(stop, _From, State) ->
-    {stop, normal, stopped, State}.
+    {stop, normal, stopped, State};
+
+%% @doc Modify the interval
+handle_call({set_interval, Interval},_From, State) ->
+    {reply, ok, State#state{interval = Interval}, Interval};
+
+%% @doc Update a property
+handle_call({update_property, Item, Value},_From, #state{callback_mod = CallbackMod,
+                                                properties = Props,
+                                                interval = Interval} = State) ->
+    Props_1 = erlang:apply(CallbackMod, update_property, [Item, Value, Props]),
+    {reply, ok, State#state{properties = Props_1}, Interval};
+
+%% @doc Suspend the server
+handle_call(suspend,_From, State) ->
+    {reply, ok, State#state{is_suspending = true}};
+
+%% @doc Resume the server
+handle_call(resume,_From, #state{interval = Interval,
+                                 is_suspending = false} = State) ->
+    {reply, ok, State, Interval};
+handle_call(resume,_From, #state{interval = Interval} = State) ->
+    {reply, ok, State#state{is_suspending = false}, Interval};
+
+%% @doc Retrieve the state
+handle_call(state,_From, #state{interval = Interval} = State) ->
+    State_1 = lists:zip(record_info(fields, state),tl(tuple_to_list(State))),
+    {reply, {ok, State_1}, State, Interval}.
 
 
 %% @doc Handling cast message
@@ -104,11 +175,12 @@ handle_cast(_Msg, #state{interval = Interval} = State) ->
 %% <p>
 %% gen_server callback - Module:handle_info(Info, State) -> Result.
 %% </p>
+handle_info(timeout, #state{is_suspending = true} = State) ->
+    {noreply, State};
 handle_info(timeout, #state{id = Id,
                             callback_mod = CallbackMod,
                             properties = Props,
-                            interval = Interval
-                           } = State) ->
+                            interval = Interval} = State) ->
     Props_1 = case catch erlang:apply(
                            CallbackMod, handle_call, [Id, Props]) of
                   {'EXIT', Cause} ->
