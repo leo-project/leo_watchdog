@@ -43,7 +43,7 @@ suite_test_() ->
              ok
      end,
      fun (_) ->
-             ok = application:stop(leo_watchdog),
+             application:stop(leo_watchdog),
              ok
      end,
      [
