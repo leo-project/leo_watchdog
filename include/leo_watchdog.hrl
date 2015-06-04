@@ -130,9 +130,9 @@
 %% ---------------------------------------------------------------------
 -define(MAX_SAFE_TIMES, 1).
 
-%% @doc Watchdog - rex - Is enabled
--define(env_wd_subscriber_safe_times(),
-        case application:get_env(leo_watchdog, subscriber_safe_times) of
+%% @doc Watchdog - When reach a number of safe, a watchdog loosen the control
+-define(env_wd_loosen_control_at_safe_count(),
+        case application:get_env(leo_watchdog, loosen_control_at_safe_count) of
             {ok, EnvWDSubSafeTimes} ->
                 EnvWDSubSafeTimes;
             _ ->
