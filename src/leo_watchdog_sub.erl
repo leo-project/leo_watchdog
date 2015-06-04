@@ -71,7 +71,7 @@ start_link(Id, CallbackMod) ->
                                                     Pid::pid(),
                                                     Error::{already_started,Pid} | term()).
 start_link(Id, Filters, CallbackMod) ->
-    MaxSafeTimes = ?env_wd_subscriber_safe_times(),
+    MaxSafeTimes = ?env_wd_loosen_control_at_safe_count(),
     start_link(Id, Filters, MaxSafeTimes, CallbackMod).
 
 -spec(start_link(Id, Filters, MaxSafeTimes, CallbackMod) ->
