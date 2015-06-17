@@ -59,7 +59,7 @@ suite_test_() ->
 
              Interval = 3,
              MaxMemForBin = 1024 * 1024 * 32,
-             MaxLoadAvg  = 2,
+             MaxLoadAvg  = 0.8,
              MaxCPUUtil  = 30,
              MaxInput    = 64,
              MaxOutput   = 64,
