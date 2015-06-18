@@ -155,8 +155,18 @@ get_disk_data() ->
                            DiskData::[#disk_data{}]).
 %% For Mac OS-X
 get_disk_data({unix,darwin}, RetL) ->
-    F = fun([Filesystem, Blocks, Used, Available,
-             _Capacity, _IUsed, _Free, UsePer, MountedOn]) ->
+    F = fun(Args) ->
+                [Filesystem, Blocks, Used, Available, UsePer, MountedOn] =
+                    case length(Args) of
+                        9 ->
+                            [El_1, El_2, El_3, El_4,_,_,_, El_5, El_6] = Args,
+                            [El_1, El_2, El_3, El_4, El_5, El_6];
+                        6 ->
+                            Args;
+                        _ ->
+                            ["","0","0","0","0%",""]
+                    end,
+
                 #disk_data{filesystem = Filesystem,
                            blocks    = list_to_integer(Blocks),
                            used      = list_to_integer(Used),
