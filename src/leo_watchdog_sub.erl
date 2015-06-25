@@ -144,9 +144,9 @@ handle_info(timeout, #state{id = Id,
             {noreply, State#state{consecutive_safe_times = SafeTimes_1}, ?DEF_TIMEOUT};
         _ ->
             lists:foreach(
-              fun(#watchdog_alarm{id = AId} = AItem) ->
+              fun(#watchdog_alarm{} = AItem) ->
                       catch erlang:apply(Mod, handle_notify,
-                                         [AId, AItem, leo_date:unixtime()]),
+                                         [Id, AItem, leo_date:unixtime()]),
                       ok;
                  (_) ->
                       ok
