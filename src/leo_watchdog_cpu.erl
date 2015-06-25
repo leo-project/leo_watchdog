@@ -143,8 +143,8 @@ handle_call(Id, #state{threshold_load_avg = ThresholdLoadAvg,
                        raised_error_times = RaisedErrorTimes,
                        cur_error_times    = CurErrorTimes} = State) ->
     try
-        AVG_1 = erlang:round(cpu_sup:avg1() / 256 * 1000) / 10,
-        AVG_5 = erlang:round(cpu_sup:avg5() / 256 * 1000) / 10,
+        AVG_1 = erlang:round(cpu_sup:avg1() / 256 * 100),
+        AVG_5 = erlang:round(cpu_sup:avg5() / 256 * 100),
         CPU_Util = case os:type() of
                        {unix, linux} ->
                            erlang:round(cpu_sup:util() * 10) / 10;
@@ -157,8 +157,8 @@ handle_call(Id, #state{threshold_load_avg = ThresholdLoadAvg,
                      end,
 
         %% Load avg
-        Props_1 = [{?WD_ITEM_LOAD_AVG_1M, AVG_1},
-                   {?WD_ITEM_LOAD_AVG_5M, AVG_5}],
+        Props_1 = [{?WD_ITEM_LOAD_AVG_1M, erlang:round(AVG_1) / 100},
+                   {?WD_ITEM_LOAD_AVG_5M, erlang:round(AVG_5) / 100}],
         Level_1 = case (ThresholdLoadAvg * 100 < AVG_1 orelse
                         ThresholdLoadAvg * 100 < AVG_5) of
                       true ->

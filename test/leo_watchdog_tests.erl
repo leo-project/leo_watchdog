@@ -59,7 +59,7 @@ suite_test_() ->
 
              Interval = 3,
              MaxMemForBin = 1024 * 1024 * 32,
-             MaxLoadAvg  = 2,
+             MaxLoadAvg  = 0.8,
              MaxCPUUtil  = 30,
              MaxInput    = 64,
              MaxOutput   = 64,
@@ -75,16 +75,13 @@ suite_test_() ->
              ok = leo_watchdog_sup:start_child(cluster, [{?MODULE, check_cluster_members, []}], Interval),
 
              ok = leo_watchdog_sup:start_subscriber(
-                    'leo_watchdog_sub_io', [?WD_ITEM_IO], ?MODULE),
+                    'leo_watchdog_sub_io', ['leo_watchdog_io'], ?MODULE),
              ok = leo_watchdog_sup:start_subscriber(
-                    'leo_watchdog_sub_cpu', [?WD_ITEM_LOAD_AVG,
-                                             ?WD_ITEM_CPU_UTIL], ?MODULE),
+                    'leo_watchdog_sub_cpu', ['leo_watchdog_cpu'], ?MODULE),
              ok = leo_watchdog_sup:start_subscriber(
-                    'leo_watchdog_sub_disk', [?WD_ITEM_DISK_USE,
-                                              ?WD_ITEM_DISK_UTIL,
-                                              ?WD_ITEM_DISK_IO], ?MODULE),
+                    'leo_watchdog_sub_disk', ['leo_watchdog_disk'], ?MODULE),
              ok = leo_watchdog_sup:start_subscriber(
-                    'leo_watchdog_sub_cluster', [?WD_ITEM_CLUSTER], ?MODULE),
+                    'leo_watchdog_sub_cluster', ['leo_watchdog_cluster'], ?MODULE),
              ok
      end,
      fun (_) ->
