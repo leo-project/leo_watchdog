@@ -29,7 +29,7 @@
 -behaviour(gen_server).
 
 -include("leo_watchdog.hrl").
--include_lib("elarm/include/elarm.hrl").
+%% -include_lib("elarm/include/elarm.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 %% API
@@ -44,9 +44,8 @@
 
 -record(state, {
           id :: atom(),
-          filter :: [atom()]|[{atom(), any()}],
+          filter::[module()],
           callback_mod :: module()|undefined,
-          elarm_ref    :: reference(),
           consecutive_safe_times = 0 :: non_neg_integer(),
           max_safe_times = ?MAX_SAFE_TIMES :: non_neg_integer()
          }).
@@ -98,17 +97,14 @@ stop(Id) ->
 %%--------------------------------------------------------------------
 %% @doc Initiates the server
 init([Id, Filter, MaxSafeTimes, CallbackMod]) ->
-    {ok, Ref, _} = elarm:subscribe(Filter, self()),
     {ok, #state{id = Id,
                 filter = Filter,
                 callback_mod = CallbackMod,
-                elarm_ref = Ref,
                 max_safe_times = MaxSafeTimes}, ?DEF_TIMEOUT}.
 
 
 %% @doc gen_server callback - Module:handle_call(Request, From, State) -> Result
-handle_call(stop, _From, #state{elarm_ref = Ref} = State) ->
-    elarm:unsubscribe(Ref),
+handle_call(stop, _From, State) ->
     {stop, normal, stopped, State}.
 
 
@@ -128,23 +124,35 @@ handle_info(_, #state{callback_mod = undefined} = State) ->
     {noreply, State, ?DEF_TIMEOUT};
 handle_info(timeout, #state{id = Id,
                             callback_mod = Mod,
+                            filter = Filter,
                             consecutive_safe_times = SafeTimes,
                             max_safe_times = MaxSafeTimes} = State) ->
-    SafeTimes_1 = case (MaxSafeTimes =< SafeTimes) of
-                      true ->
-                          catch erlang:apply(Mod, handle_notify,
-                                             [Id, [], MaxSafeTimes,leo_date:unixtime()]),
-                          1;
-                      false ->
-                          SafeTimes + 1
-                  end,
-    {noreply, State#state{consecutive_safe_times = SafeTimes_1}, ?DEF_TIMEOUT};
-handle_info({elarm, _Ref, Alarm}, #state{id = Id,
-                                         callback_mod = Mod} = State) ->
-    Alarm_1 = ?to_watchdog_alarm(Alarm),
-    catch erlang:apply(Mod, handle_notify,
-                       [Id, Alarm_1, leo_date:unixtime()]),
-    {noreply, State#state{consecutive_safe_times = 0}, ?DEF_TIMEOUT};
+    AlarmL = lists:flatten([A || {ok, A}
+                                     <- [leo_watchdog_state:find_by_id(F)
+                                         || {src, F} <- Filter]]),
+    case AlarmL of
+        [] ->
+            SafeTimes_1 =
+                case (MaxSafeTimes =< SafeTimes) of
+                    true ->
+                        catch erlang:apply(Mod, handle_notify,
+                                           [Id, [], MaxSafeTimes,leo_date:unixtime()]),
+                        1;
+                    false ->
+                        SafeTimes + 1
+                end,
+            {noreply, State#state{consecutive_safe_times = SafeTimes_1}, ?DEF_TIMEOUT};
+        _ ->
+            lists:foreach(
+              fun(#watchdog_alarm{id = AId} = AItem) ->
+                      catch erlang:apply(Mod, handle_notify,
+                                         [AId, AItem, leo_date:unixtime()]),
+                      ok;
+                 (_) ->
+                      ok
+              end, AlarmL),
+            {noreply, State#state{consecutive_safe_times = 0}, ?DEF_TIMEOUT}
+        end;
 handle_info(_, State) ->
     {noreply, State, ?DEF_TIMEOUT}.
 
