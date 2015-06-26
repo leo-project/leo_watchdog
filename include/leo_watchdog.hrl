@@ -83,6 +83,7 @@
 %% Watchdog item's constants
 %%
 -define(WD_WARN_USE_PERCENTAGE, 80).
+-define(WD_ITEM_CPU,         'load_avg_and_cpu_util').
 -define(WD_ITEM_LOAD_AVG,    'load_avg').
 -define(WD_ITEM_LOAD_AVG_1M, 'load_avg_1m').
 -define(WD_ITEM_LOAD_AVG_5M, 'load_avg_5m').
