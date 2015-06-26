@@ -152,7 +152,6 @@ handle_call(Id, #state{threshold_load_avg = ThresholdLoadAvg,
                                Ret_CPUUtil ->
                                    SumCPUUtil =
                                        lists:foldl(fun(I, Sum) ->
-                                                           ?debugVal(I),
                                                            Sum + I
                                                    end, 0, [Busy || {_,Busy,_,_} <- Ret_CPUUtil]),
                                    erlang:round(SumCPUUtil / length(Ret_CPUUtil))
