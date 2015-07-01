@@ -103,7 +103,7 @@ update_property(_,_, State) ->
     State.
 
 
-%% @dog Call execution of the watchdog
+%% @doc Call execution of the watchdog
 -spec(handle_call(Id, State) ->
              {ok, State} |
              {{error,Error}, State} when Id::atom(),
@@ -153,7 +153,7 @@ handle_call(Id, #state{check_cluster_state_mfa = CheckClusterStateMFA} = State) 
     {ok, State}.
 
 
-%% @dog Call execution failed
+%% @doc Call execution failed
 -spec(handle_fail(Id, Cause) ->
              ok | {error,Error} when Id::atom(),
                                      Cause::any(),
