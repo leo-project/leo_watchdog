@@ -27,13 +27,17 @@
 -undef(DEF_TIMEOUT).
 -define(DEF_TIMEOUT, 5000).
 
+-define(WD_TARGET_REX,     'rex').
 -define(WD_TARGET_CPU,     'cpu').
 -define(WD_TARGET_DISK,    'disk').
 -define(WD_TARGET_IO,      'io').
+-define(WD_TARGET_IOSTAT,  'iostat').
 -define(WD_TARGET_CLUSTER, 'cluster').
--type(watchdog_target() :: ?WD_TARGET_CPU |
+-type(watchdog_target() :: ?WD_TARGET_REX |
+                           ?WD_TARGET_CPU |
                            ?WD_TARGET_DISK |
                            ?WD_TARGET_IO |
+                           ?WD_TARGET_IOSTAT |
                            ?WD_TARGET_CLUSTER).
 
 -define(WD_LEVEL_SAFE,       0).
@@ -61,7 +65,7 @@
 -record(watchdog_alarm, {
           id :: atom(),
           state :: #watchdog_state{},
-          event_time :: tuple()
+          event_time :: non_neg_integer()
          }).
 
 %%

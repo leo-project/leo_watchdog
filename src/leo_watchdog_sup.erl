@@ -69,7 +69,7 @@ stop_1([{NamedProc,_Pid,worker,_}|Rest]) ->
 %% @doc Creates the gen_server process as part of a supervision tree
 %% @end
 -spec(start_child(Type, Args, Interval) ->
-             ok | no_return() when Type::rex|cpu|io|disk,
+             ok | no_return() when Type::watchdog_target(),
                                    Args::[any()],
                                    Interval::pos_integer()).
 start_child(Type, Args, Interval) ->

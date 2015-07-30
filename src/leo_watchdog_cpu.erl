@@ -97,7 +97,7 @@ stop() ->
 -spec(state() ->
              {ok, State} when State::[{atom(), any()}]).
 state() ->
-    case leo_watchdog:state(leo_watchdog_cpu) of
+    case catch leo_watchdog:state(leo_watchdog_cpu) of
         {ok, State} ->
             Props = leo_misc:get_value('properties', State),
             Props_1 = lists:zip(record_info(fields, state),tl(tuple_to_list(Props))),

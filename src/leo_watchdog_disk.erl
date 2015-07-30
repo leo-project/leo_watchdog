@@ -55,8 +55,8 @@
           %% for other disk-stats
           target_devices = [] :: [string()],
           threshold_disk_util = 90.0 :: float(),
-          threshold_disk_rkb  = 6400.0 :: float(),
-          threshold_disk_wkb  = 6400.0 :: float(),
+          threshold_disk_rkb  = 6400 :: non_neg_integer(),
+          threshold_disk_wkb  = 6400 :: non_neg_integer(),
           raised_error_times  = 3 :: non_neg_integer(),
           cur_error_times     = 0 :: non_neg_integer()
          }).
@@ -83,7 +83,7 @@
                                                     Pid::pid(),
                                                     Error::{already_started,Pid} | term()).
 start_link(TargetPaths, ThresholdDiskUse, ThresholdDiskUtil, IntervalTime) ->
-    start_link(TargetPaths, ThresholdDiskUse, [], ThresholdDiskUtil,
+    start_link(TargetPaths, [], ThresholdDiskUse, ThresholdDiskUtil,
                ?DEF_DISK_READ_KB, ?DEF_DISK_WRITE_KB,
                ?DEF_RAISED_ERROR_TIMES,
                IntervalTime).
@@ -98,8 +98,8 @@ start_link(TargetPaths, ThresholdDiskUse, ThresholdDiskUtil, IntervalTime) ->
                                                     TargetDevices::[string()],
                                                     ThresholdDiskUse::non_neg_integer(),
                                                     ThresholdDiskUtil::float(),
-                                                    ThresholdRkb::float(),
-                                                    ThresholdWkb::float(),
+                                                    ThresholdRkb::non_neg_integer(),
+                                                    ThresholdWkb::non_neg_integer(),
                                                     RaisedErrorTimes::non_neg_integer(),
                                                     IntervalTime::pos_integer(),
                                                     Pid::pid(),
@@ -130,7 +130,7 @@ stop() ->
 -spec(state() ->
              {ok, State}|not_found when State::[{atom(), any()}]).
 state() ->
-    case leo_watchdog:state(leo_watchdog_disk) of
+    case catch leo_watchdog:state(leo_watchdog_disk) of
         {ok, State} ->
             Props = leo_misc:get_value('properties', State),
             Props_1 = lists:zip(record_info(fields, state),tl(tuple_to_list(Props))),
@@ -234,8 +234,8 @@ disk_use_1([_|Rest], Path) ->
                                       Cause::any()).
 init(#state{target_devices = Devices}) ->
     spawn(fun() ->
-                  ok = leo_watchdog_sup:start_child(
-                         iostat, [os:type(), Devices], ?DEF_CHECK_INTERVAL)
+                  leo_watchdog_sup:start_child(
+                    iostat, [os:type(), Devices], ?DEF_CHECK_INTERVAL)
           end),
     ok.
 
@@ -354,13 +354,13 @@ check(Id, [Path|Rest], #state{threshold_disk_use = ThresholdDiskUse} = State, Ac
 
 %% @doc Check disk util
 %% @private
+-spec(disk_stats(State) ->
+             {ok, term()} when State::#state{}).
 disk_stats(State) ->
     DiskStats = leo_watchdog_iostat:get(),
     disk_stats_1(DiskStats, State).
 
 %% @private
-disk_stats_1({ok, []},_) ->
-    {ok, []};
 disk_stats_1({ok, #disk_stat{util = Util,
                              rkb  = Rkb,
                              wkb  = Wkb} = DiskStats},

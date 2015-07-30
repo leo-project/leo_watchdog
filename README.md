@@ -1,7 +1,6 @@
-leo_watchdog
-============
+# leo_watchdog
 
-[![Build Status](https://secure.travis-ci.org/leo-project/leo_watchdog.png?branch=master)](http://travis-ci.org/leo-project/leo_watchdog)
+[![Build Status](https://secure.travis-ci.org/leo-project/leo_watchdog.png?branch=develop)](http://travis-ci.org/leo-project/leo_watchdog)
 
 **leo_watchdog** keeps monitoring an application in order to realize high-availability.
 
@@ -17,3 +16,7 @@ leo_watchdog
 ## License
 
 leo_watchdog's license is [Apache License Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.html)
+
+## Sponsors
+
+LeoProject/LeoFS is sponsored by [Rakuten, Inc.](http://global.rakuten.com/corp/) and suppoerted by [Rakuten Institute of Technology](http://rit.rakuten.co.jp/).

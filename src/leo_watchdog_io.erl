@@ -44,11 +44,11 @@
          handle_fail/2]).
 
 -record(state, {
-          threshold_input  = 0 :: pos_integer(),
-          threshold_output = 0 :: pos_integer(),
-          prev_input  = 0 :: pos_integer(),
-          prev_output = 0 :: pos_integer(),
-          interval = timer:seconds(1) :: pos_integer()
+          threshold_input  = 0 :: non_neg_integer(),
+          threshold_output = 0 :: non_neg_integer(),
+          prev_input  = 0 :: non_neg_integer(),
+          prev_output = 0 :: non_neg_integer(),
+          interval = timer:seconds(1) :: non_neg_integer()
          }).
 
 
