@@ -46,8 +46,8 @@
 
 
 %% @doc Start the watchdog
--spec(start(Watchdog) ->
-             ok | {error, any()} when Watchdog::watchdog_target()).
+-spec(start(Target) ->
+             ok | {error, any()} when Target::watchdog_target()).
 start(?WD_TARGET_CPU = Target) ->
     ok = application:set_env(leo_watchdog, cpu_enabled, true),
     case whereis(leo_watchdog_cpu) of
@@ -76,6 +76,8 @@ start(_) ->
     {error, invalid_parameter}.
 
 %% @private
+-spec(start_1(Target) ->
+             ok | {error, any()} when Target::watchdog_target()).
 start_1(?WD_TARGET_CPU) ->
     MaxCPULoadAvg = ?env_wd_threshold_cpu_load_avg(),
     MaxCPUUtil    = ?env_wd_threshold_cpu_util(),
@@ -98,9 +100,7 @@ start_1(?WD_TARGET_DISK) ->
 start_1(?WD_TARGET_CLUSTER) ->
     leo_watchdog_sup:start_child(
       cluster, [?env_wd_cluster_check_state_of_members_mfa()],
-      ?env_wd_cluster_interval());
-start_1(_) ->
-    {error, invalid_parameter}.
+      ?env_wd_cluster_interval()).
 
 
 %% @doc Stop the watchdog

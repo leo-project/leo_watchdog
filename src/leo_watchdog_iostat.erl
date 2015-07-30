@@ -78,7 +78,7 @@ stop() ->
 
 %% @doc Retrieve latest iostat
 -spec(get() ->
-             {ok, Result} when Result::[{atom(), any()}]).
+             {ok, Result} when Result::#disk_stat{}).
 get() ->
     case catch ets:lookup(?WD_TBL_IOSTAT, 1) of
         [{_, Ret}|_] ->
@@ -251,16 +251,13 @@ get_item(KeyPos, Values) ->
             get_item(float, KeyPos, Values)
     end.
 
-get_item(_,undefined,_) ->
-    0;
+%% @private
 get_item(_, KeyPos, Values) when KeyPos > length(Values) ->
     0;
 get_item(float, KeyPos, Values) ->
     list_to_float(lists:nth(KeyPos, Values));
 get_item(integer, KeyPos, Values) ->
-    list_to_integer(lists:nth(KeyPos, Values));
-get_item(_,_,_) ->
-    0.
+    list_to_integer(lists:nth(KeyPos, Values)).
 
 
 %% @private
