@@ -301,7 +301,7 @@ check(Id, [], #state{
                                {mounted_on, M}],
                       error_logger:warning_msg("~p,~p,~p,~p~n",
                                                [{module, ?MODULE_STRING},
-                                                {function, "handle_call/2"},{line, ?LINE},
+                                                {function, "check/4"},{line, ?LINE},
                                                 {body, [{result, error}] ++ Props}]),
                       elarm:raise(Id, ?WD_ITEM_DISK_USE,
                                   #watchdog_state{id = Id,
@@ -381,7 +381,7 @@ disk_stats_1({ok, #disk_stat{util = Util,
                   true ->
                       error_logger:warning_msg("~p,~p,~p,~p~n",
                                                [{module, ?MODULE_STRING},
-                                                {function, "handle_call/2"},{line, ?LINE},
+                                                {function, "disk_stats_1/2"},{line, ?LINE},
                                                 {body, [{result, error}] ++ Props_1}]),
                       elarm:raise(
                         Id, ?WD_ITEM_DISK_UTIL,
@@ -400,7 +400,7 @@ disk_stats_1({ok, #disk_stat{util = Util,
                   true ->
                       error_logger:warning_msg("~p,~p,~p,~p~n",
                                                [{module, ?MODULE_STRING},
-                                                {function, "handle_call/2"},{line, ?LINE},
+                                                {function, "disk_stats_1/2"},{line, ?LINE},
                                                 {body, [{result, error}] ++ Props_2}]),
                       elarm:raise(
                         Id, ?WD_ITEM_DISK_IO,
