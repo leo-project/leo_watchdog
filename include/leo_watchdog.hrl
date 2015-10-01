@@ -33,12 +33,14 @@
 -define(WD_TARGET_IO,      'io').
 -define(WD_TARGET_IOSTAT,  'iostat').
 -define(WD_TARGET_CLUSTER, 'cluster').
+-define(WD_TARGET_ERRORS, 'errors').
 -type(watchdog_target() :: ?WD_TARGET_REX |
                            ?WD_TARGET_CPU |
                            ?WD_TARGET_DISK |
                            ?WD_TARGET_IO |
                            ?WD_TARGET_IOSTAT |
-                           ?WD_TARGET_CLUSTER).
+                           ?WD_TARGET_CLUSTER |
+                           ?WD_TARGET_ERRORS).
 
 -define(WD_LEVEL_SAFE,       0).
 -define(WD_LEVEL_WARN,      70).
@@ -82,6 +84,7 @@
 -define(DEF_DISK_WRITE_KB,  262144). %% 262144KB (256MB)
 -define(DEF_RAISED_ERROR_TIMES, 3).
 -define(DEF_CHECK_INTERVAL, 1). %% 1sec
+-define(DEF_ERRORS_THRESHOLD_COUNT, 100).
 
 %%
 %% Watchdog item's constants
@@ -99,6 +102,7 @@
 -define(WD_ITEM_DISK_RKB,    'disk_rkb').
 -define(WD_ITEM_DISK_WKB,    'disk_wkb').
 -define(WD_ITEM_CLUSTER,     'cluster').
+-define(WD_ITEM_ERRORS,      'errors').
 
 -define(WD_GRP_CPU,  [?WD_ITEM_LOAD_AVG,
                       ?WD_ITEM_CPU_UTIL
@@ -370,11 +374,42 @@
                 ?DEF_WATCH_INTERVAL
         end).
 
-%% @doc Watchdog - cluster - interval
+%% @doc Watchdog - cluster - mfa
 -define(env_wd_cluster_check_state_of_members_mfa(),
         case application:get_env(leo_watchdog, cluster_check_state_of_members_mfa) of
             {ok, EnvWDClusterStateOfMembersMFA} ->
                 EnvWDClusterStateOfMembersMFA;
             _ ->
                 {undefind, undefined, []}
+        end).
+
+
+%% ---------------------------------------------------------------------
+%% ERRORS
+%% ---------------------------------------------------------------------
+%% @doc Watchdog - errors - Is enabled
+-define(env_wd_erros_enabled(),
+        case application:get_env(leo_watchdog, errors_enabled) of
+            {ok, EnvWDErrorsEnabled} ->
+                EnvWDErrorsEnabled;
+            _ ->
+                false
+        end).
+
+%% @doc Watchdog - errors - interval
+-define(env_wd_errors_interval(),
+        case application:get_env(leo_watchdog, errors_interval) of
+            {ok, EnvWDErrorsInterval} ->
+                EnvWDErrorsInterval;
+            _ ->
+                ?DEF_WATCH_INTERVAL
+        end).
+
+%% @doc Watchdog - errors - interval
+-define(env_wd_errors_threshold_count(),
+        case application:get_env(leo_watchdog, errors_threshold_count) of
+            {ok, EnvWDErrorsThresholdCount} ->
+                EnvWDErrorsThresholdCount;
+            _ ->
+                ?DEF_ERRORS_THRESHOLD_COUNT
         end).

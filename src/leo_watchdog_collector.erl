@@ -112,8 +112,9 @@ handle_call({push, ErrorMsg},_From, #state{count = Count,
 handle_call(pull,_From, #state{count = Count,
                                set_errors = SetErrors,
                                interval = Interval} = State) ->
-    {reply, {ok, {Count, SetErrors}}, State#state{count = 0,
-                                                  set_errors = sets:new()}, Interval}.
+    Errors = sets:to_list(SetErrors),
+    {reply, {ok, {Count, Errors}}, State#state{count = 0,
+                                               set_errors = sets:new()}, Interval}.
 
 
 %% @doc Handling cast message
