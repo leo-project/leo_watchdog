@@ -44,7 +44,7 @@
          terminate/2, code_change/3]).
 
 -record(state, {count = 0 :: non_neg_integer(),
-                set_errors = sets:new() :: [term()],
+                errors = dict:new() :: [term()],
                 interval = ?DEF_WATCH_INTERVAL :: pos_integer()
                }).
 
@@ -94,7 +94,7 @@ pull() ->
 %% @doc Initiates the server
 init([Interval]) ->
     {ok, #state{count = 0,
-                set_errors = sets:new(),
+                errors = dict:new(),
                 interval = Interval}, Interval}.
 
 
@@ -104,17 +104,25 @@ handle_call(stop, _From, State) ->
 
 %% @doc Suspend the server
 handle_call({push, ErrorMsg},_From, #state{count = Count,
-                                           set_errors = SetErrors,
+                                           errors = Errors,
                                            interval = Interval} = State) ->
+    CountOfErrorMsg =
+        case dict:find(ErrorMsg, Errors) of
+            error ->
+                1;
+            {ok, Cur} ->
+                Cur + 1
+        end,
     {reply, ok, State#state{count = Count + 1,
-                            set_errors = sets:add_element(ErrorMsg, SetErrors)}, Interval};
+                            errors = dict:store(ErrorMsg, CountOfErrorMsg,
+                                                Errors)}, Interval};
 
 handle_call(pull,_From, #state{count = Count,
-                               set_errors = SetErrors,
+                               errors = Errors,
                                interval = Interval} = State) ->
-    Errors = sets:to_list(SetErrors),
-    {reply, {ok, {Count, Errors}}, State#state{count = 0,
-                                               set_errors = sets:new()}, Interval}.
+    Errors_1 = dict:to_list(Errors),
+    {reply, {ok, {Count, Errors_1}}, State#state{count = 0,
+                                                 errors = dict:new()}, Interval}.
 
 
 %% @doc Handling cast message
@@ -131,7 +139,7 @@ handle_cast(_Msg, #state{interval = Interval} = State) ->
 %% </p>
 handle_info(timeout, #state{interval = Interval} = State) ->
     {noreply, State#state{count = 0,
-                          set_errors = sets:new()}, Interval};
+                          errors = dict:new()}, Interval};
 
 handle_info(_, State=#state{interval = Interval}) ->
     {noreply, State, Interval}.

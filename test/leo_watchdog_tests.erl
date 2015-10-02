@@ -97,7 +97,9 @@ suite_test_() ->
 
 suite() ->
     %% Watchdog-errors:
-    [leo_watchdog_collector:push({error, 'async-get'}) || _I <- lists:seq(1, 1000)],
+    [leo_watchdog_collector:push({error, 'async-get'}) || _I <- lists:seq(1, 700)],
+    [leo_watchdog_collector:push({error, 'other_1'}) || _I <- lists:seq(1, 200)],
+    [leo_watchdog_collector:push({error, 'other_2'}) || _I <- lists:seq(1, 100)],
 
     %% Other watchdog:
     NumOfMsgs = 1000000,
