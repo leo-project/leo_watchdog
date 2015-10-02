@@ -78,7 +78,7 @@ start(?WD_TARGET_ERROR = Target) ->
         undefined ->
             start_1(Target);
         _ ->
-            leo_watchdog:resume(leo_watchdog_errors)
+            leo_watchdog:resume(leo_watchdog_error)
     end;
 start(_) ->
     {error, invalid_parameter}.
