@@ -44,7 +44,7 @@
          terminate/2, code_change/3]).
 
 -record(state, {count = 0 :: non_neg_integer(),
-                errors = dict:new() :: [term()],
+                collection = dict:new() :: [term()],
                 interval = ?DEF_WATCH_INTERVAL :: pos_integer()
                }).
 
@@ -76,10 +76,10 @@ stop() ->
 
 
 %% @doc Resume the server
--spec(push(ErrorMsg) ->
-             ok when ErrorMsg::term()).
-push(ErrorMsg) ->
-    gen_server:call(?MODULE, {push, ErrorMsg}).
+-spec(push(Msg) ->
+             ok when Msg::term()).
+push(Msg) ->
+    gen_server:call(?MODULE, {push, Msg}).
 
 %% @doc Resume the server
 -spec(pull() ->
@@ -94,7 +94,7 @@ pull() ->
 %% @doc Initiates the server
 init([Interval]) ->
     {ok, #state{count = 0,
-                errors = dict:new(),
+                collection = dict:new(),
                 interval = Interval}, Interval}.
 
 
@@ -103,26 +103,25 @@ handle_call(stop, _From, State) ->
     {stop, normal, stopped, State};
 
 %% @doc Suspend the server
-handle_call({push, ErrorMsg},_From, #state{count = Count,
-                                           errors = Errors,
-                                           interval = Interval} = State) ->
-    CountOfErrorMsg =
-        case dict:find(ErrorMsg, Errors) of
-            error ->
-                1;
-            {ok, Cur} ->
-                Cur + 1
-        end,
+handle_call({push, Msg},_From, #state{count = Count,
+                                      collection = Collection,
+                                      interval = Interval} = State) ->
+    CountOfMsg = case dict:find(Msg, Collection) of
+                     error ->
+                         1;
+                     {ok, Cur} ->
+                         Cur + 1
+                 end,
     {reply, ok, State#state{count = Count + 1,
-                            errors = dict:store(ErrorMsg, CountOfErrorMsg,
-                                                Errors)}, Interval};
+                            collection = dict:store(Msg, CountOfMsg,
+                                                    Collection)}, Interval};
 
 handle_call(pull,_From, #state{count = Count,
-                               errors = Errors,
+                               collection = Collection,
                                interval = Interval} = State) ->
-    Errors_1 = dict:to_list(Errors),
-    {reply, {ok, {Count, Errors_1}}, State#state{count = 0,
-                                                 errors = dict:new()}, Interval}.
+    Collection_1 = dict:to_list(Collection),
+    {reply, {ok, {Count, Collection_1}}, State#state{count = 0,
+                                                     collection = dict:new()}, Interval}.
 
 
 %% @doc Handling cast message
@@ -139,7 +138,7 @@ handle_cast(_Msg, #state{interval = Interval} = State) ->
 %% </p>
 handle_info(timeout, #state{interval = Interval} = State) ->
     {noreply, State#state{count = 0,
-                          errors = dict:new()}, Interval};
+                          collection = dict:new()}, Interval};
 
 handle_info(_, State=#state{interval = Interval}) ->
     {noreply, State, Interval}.
