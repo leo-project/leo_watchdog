@@ -82,7 +82,7 @@ suite_test_() ->
              ok = leo_watchdog_sup:start_subscriber(
                     'leo_watchdog_sub_cluster', ['leo_watchdog_cluster'], ?MODULE),
              ok = leo_watchdog_sup:start_subscriber(
-                    'leo_watchdog_sub_errors', ['leo_watchdog_errors'], ?MODULE),
+                    'leo_watchdog_sub_error', ['leo_watchdog_error'], ?MODULE),
              ok
      end,
      fun (_) ->
