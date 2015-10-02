@@ -33,14 +33,14 @@
 -define(WD_TARGET_IO,      'io').
 -define(WD_TARGET_IOSTAT,  'iostat').
 -define(WD_TARGET_CLUSTER, 'cluster').
--define(WD_TARGET_ERRORS, 'errors').
+-define(WD_TARGET_ERROR,   'error').
 -type(watchdog_target() :: ?WD_TARGET_REX |
                            ?WD_TARGET_CPU |
                            ?WD_TARGET_DISK |
                            ?WD_TARGET_IO |
                            ?WD_TARGET_IOSTAT |
                            ?WD_TARGET_CLUSTER |
-                           ?WD_TARGET_ERRORS).
+                           ?WD_TARGET_ERROR).
 
 -define(WD_LEVEL_SAFE,       0).
 -define(WD_LEVEL_WARN,      70).
@@ -84,7 +84,7 @@
 -define(DEF_DISK_WRITE_KB,  262144). %% 262144KB (256MB)
 -define(DEF_RAISED_ERROR_TIMES, 3).
 -define(DEF_CHECK_INTERVAL, 1). %% 1sec
--define(DEF_ERRORS_THRESHOLD_COUNT, 100).
+-define(DEF_ERROR_THRESHOLD_COUNT, 100).
 
 %%
 %% Watchdog item's constants
@@ -388,28 +388,28 @@
 %% ERRORS
 %% ---------------------------------------------------------------------
 %% @doc Watchdog - errors - Is enabled
--define(env_wd_erros_enabled(),
-        case application:get_env(leo_watchdog, errors_enabled) of
-            {ok, EnvWDErrorsEnabled} ->
-                EnvWDErrorsEnabled;
+-define(env_wd_erro_enabled(),
+        case application:get_env(leo_watchdog, error_enabled) of
+            {ok, EnvWDErrorEnabled} ->
+                EnvWDErrorEnabled;
             _ ->
                 false
         end).
 
 %% @doc Watchdog - errors - interval
--define(env_wd_errors_interval(),
-        case application:get_env(leo_watchdog, errors_interval) of
-            {ok, EnvWDErrorsInterval} ->
-                EnvWDErrorsInterval;
+-define(env_wd_error_interval(),
+        case application:get_env(leo_watchdog, error_interval) of
+            {ok, EnvWDErrorInterval} ->
+                EnvWDErrorInterval;
             _ ->
                 ?DEF_WATCH_INTERVAL
         end).
 
 %% @doc Watchdog - errors - interval
--define(env_wd_errors_threshold_count(),
-        case application:get_env(leo_watchdog, errors_threshold_count) of
-            {ok, EnvWDErrorsThresholdCount} ->
-                EnvWDErrorsThresholdCount;
+-define(env_wd_error_threshold_count(),
+        case application:get_env(leo_watchdog, error_threshold_count) of
+            {ok, EnvWDErrorThresholdCount} ->
+                EnvWDErrorThresholdCount;
             _ ->
-                ?DEF_ERRORS_THRESHOLD_COUNT
+                ?DEF_ERROR_THRESHOLD_COUNT
         end).

@@ -124,7 +124,7 @@ child_spec(cluster, Args, Interval) ->
      2000,
      worker,
      [leo_watchdog_cluster]};
-child_spec(errors, Args, Interval) ->
+child_spec(error, Args, Interval) ->
     {leo_watchdog_error,
      {leo_watchdog_error, start_link, Args ++ [Interval]},
      permanent,

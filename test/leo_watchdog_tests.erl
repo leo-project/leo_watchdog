@@ -71,7 +71,7 @@ suite_test_() ->
              ok = leo_watchdog_sup:start_child(io,      [MaxInput, MaxOutput], Interval),
              ok = leo_watchdog_sup:start_child(disk,    [["/"], [], MaxDiskUse, MaxDiskUtil, MaxDiskRKB, MaxDiskWKB, MaxRaisedErrorTimes], Interval),
              ok = leo_watchdog_sup:start_child(cluster, [{?MODULE, check_cluster_members, []}], Interval),
-             ok = leo_watchdog_sup:start_child(errors,  [MaxNumOfErrors], Interval),
+             ok = leo_watchdog_sup:start_child(error,   [MaxNumOfErrors], Interval),
 
              ok = leo_watchdog_sup:start_subscriber(
                     'leo_watchdog_sub_io', ['leo_watchdog_io'], ?MODULE),
