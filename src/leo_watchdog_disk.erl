@@ -180,10 +180,16 @@ get_disk_data({unix, Type}, RetL) when Type =:= linux;
                                        Type =:= freebsd;
                                        Type =:= sunos ->
     F = fun([Filesystem, Blocks, Used, Available, UsePer, MountedOn]) ->
+                ListToIntF = fun(S) ->
+                                     case catch list_to_integer(S) of
+                                         {'EXIT',_} -> 0;
+                                         V -> V
+                                     end
+                             end,
                 #disk_data{filesystem = Filesystem,
-                           blocks    = list_to_integer(Blocks),
-                           used      = list_to_integer(Used),
-                           available = list_to_integer(Available),
+                           blocks = ListToIntF(Blocks),
+                           used = ListToIntF(Used),
+                           available = ListToIntF(Available),
                            use_percentage_str = UsePer,
                            mounted_on = MountedOn}
         end,
