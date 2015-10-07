@@ -131,17 +131,19 @@ handle_info(timeout, #state{id = Id,
                                      <- [leo_watchdog_state:find_by_id(F)
                                          || {src, F} <- Filter]]),
     case AlarmL of
+        %% there is no errors:
         [] ->
             SafeTimes_1 =
                 case (MaxSafeTimes =< SafeTimes) of
                     true ->
                         catch erlang:apply(Mod, handle_notify,
-                                           [Id, [], MaxSafeTimes,leo_date:unixtime()]),
+                                           [Id, [], MaxSafeTimes, leo_date:unixtime()]),
                         1;
                     false ->
                         SafeTimes + 1
                 end,
             {noreply, State#state{consecutive_safe_times = SafeTimes_1}, ?DEF_TIMEOUT};
+        %% there are some errors:
         _ ->
             lists:foreach(
               fun(#watchdog_alarm{} = AItem) ->
@@ -152,7 +154,7 @@ handle_info(timeout, #state{id = Id,
                       ok
               end, AlarmL),
             {noreply, State#state{consecutive_safe_times = 0}, ?DEF_TIMEOUT}
-        end;
+    end;
 handle_info(_, State) ->
     {noreply, State, ?DEF_TIMEOUT}.
 

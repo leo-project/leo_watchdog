@@ -161,8 +161,10 @@ handle_call(Id, #state{threshold_load_avg = ThresholdLoadAvg,
                    end,
 
         ErrorLevel = case (CurErrorTimes + 1 >= RaisedErrorTimes) of
-                         true  -> ?WD_LEVEL_ERROR;
-                         false -> ?WD_LEVEL_WARN
+                         true ->
+                             ?WD_LEVEL_ERROR;
+                         false ->
+                             ?WD_LEVEL_WARN
                      end,
 
         %% Load avg
@@ -188,6 +190,14 @@ handle_call(Id, #state{threshold_load_avg = ThresholdLoadAvg,
                   end,
 
         %% Judge error level by load-avg and cpu-util
+        case (Level_1 < ?WD_LEVEL_WARN orelse
+              Level_2 < ?WD_LEVEL_WARN) of
+            true ->
+                catch elarm:clear(Id, ?WD_ITEM_CPU);
+            false ->
+                void
+        end,
+
         case (Level_1 >= ?WD_LEVEL_WARN andalso
               Level_2 >= ?WD_LEVEL_WARN) of
             true ->
