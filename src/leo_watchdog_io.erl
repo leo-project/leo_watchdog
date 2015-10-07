@@ -146,13 +146,13 @@ handle_call(Id, #state{threshold_input   = ThresholdInput,
                                      [{module, ?MODULE_STRING},
                                       {function, "handle_call/2"},{line, ?LINE},
                                       {body, [{result, error}] ++ Props}]),
-            elarm:raise(Id, ?WD_ITEM_IO,
-                        #watchdog_state{id = Id,
-                                        level = ?WD_LEVEL_ERROR,
-                                        src   = ?WD_ITEM_IO,
-                                        props = Props});
+            catch elarm:raise(Id, ?WD_ITEM_IO,
+                              #watchdog_state{id = Id,
+                                              level = ?WD_LEVEL_ERROR,
+                                              src   = ?WD_ITEM_IO,
+                                              props = Props});
         false ->
-            elarm:clear(Id, ?WD_ITEM_IO)
+            catch elarm:clear(Id, ?WD_ITEM_IO)
     end,
 
     case (CurTotalIO > 0) of

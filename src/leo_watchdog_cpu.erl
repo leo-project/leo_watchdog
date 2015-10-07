@@ -173,7 +173,7 @@ handle_call(Id, #state{threshold_load_avg = ThresholdLoadAvg,
                       false when (ThresholdLoadAvg * 80 < AVG_1) ->
                           ?WD_LEVEL_WARN;
                       false ->
-                          elarm:clear(Id, ?WD_ITEM_LOAD_AVG),
+                          catch elarm:clear(Id, ?WD_ITEM_LOAD_AVG),
                           ?WD_LEVEL_SAFE
                   end,
 
@@ -183,7 +183,7 @@ handle_call(Id, #state{threshold_load_avg = ThresholdLoadAvg,
                       true ->
                           ErrorLevel;
                       false ->
-                          elarm:clear(Id, ?WD_ITEM_CPU_UTIL),
+                          catch elarm:clear(Id, ?WD_ITEM_CPU_UTIL),
                           ?WD_LEVEL_SAFE
                   end,
 
@@ -199,31 +199,31 @@ handle_call(Id, #state{threshold_load_avg = ThresholdLoadAvg,
                                          [{module, ?MODULE_STRING},
                                           {function, "handle_call/2"},{line, ?LINE},
                                           {body, [{result, error}] ++ Props_2}]),
-                elarm:raise(Id, ?WD_ITEM_CPU,
-                            #watchdog_state{id = Id,
-                                            level = ErrorLevel,
-                                            src   = ?WD_ITEM_CPU,
-                                            props = Props_1 ++ Props_2});
+                catch elarm:raise(Id, ?WD_ITEM_CPU,
+                                  #watchdog_state{id = Id,
+                                                  level = ErrorLevel,
+                                                  src   = ?WD_ITEM_CPU,
+                                                  props = Props_1 ++ Props_2});
             false when Level_1 >= ?WD_LEVEL_WARN ->
                 error_logger:warning_msg("~p,~p,~p,~p~n",
                                          [{module, ?MODULE_STRING},
                                           {function, "handle_call/2"},{line, ?LINE},
                                           {body, [{result, warn}] ++ Props_1}]),
-                elarm:raise(Id, ?WD_ITEM_LOAD_AVG,
-                            #watchdog_state{id = Id,
-                                            level = ?WD_LEVEL_WARN,
-                                            src   = ?WD_ITEM_LOAD_AVG,
-                                            props = Props_1});
+                catch elarm:raise(Id, ?WD_ITEM_LOAD_AVG,
+                                  #watchdog_state{id = Id,
+                                                  level = ?WD_LEVEL_WARN,
+                                                  src   = ?WD_ITEM_LOAD_AVG,
+                                                  props = Props_1});
             false when Level_2 >= ?WD_LEVEL_WARN ->
                 error_logger:warning_msg("~p,~p,~p,~p~n",
                                          [{module, ?MODULE_STRING},
                                           {function, "handle_call/2"},{line, ?LINE},
                                           {body, [{result, warn}] ++ Props_2}]),
-                elarm:raise(Id, ?WD_ITEM_CPU_UTIL,
-                            #watchdog_state{id = Id,
-                                            level = ?WD_LEVEL_WARN,
-                                            src   = ?WD_ITEM_CPU_UTIL,
-                                            props = Props_2});
+                catch elarm:raise(Id, ?WD_ITEM_CPU_UTIL,
+                                  #watchdog_state{id = Id,
+                                                  level = ?WD_LEVEL_WARN,
+                                                  src   = ?WD_ITEM_CPU_UTIL,
+                                                  props = Props_2});
             false ->
                 void
         end,

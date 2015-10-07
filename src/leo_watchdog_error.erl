@@ -121,13 +121,13 @@ handle_call(Id, #state{threshold_num_of_errors = ThresholdNumOfErrors} = State) 
                                      [{module, ?MODULE_STRING},
                                       {function, "handle_call/2"},{line, ?LINE},
                                       {body, [{result, error}] ++ Props}]),
-            elarm:raise(Id, ?WD_ITEM_ERRORS,
-                        #watchdog_state{id = Id,
-                                        level = ?WD_LEVEL_ERROR,
-                                        src = ?WD_ITEM_ERRORS,
-                                        props = Props});
+            catch elarm:raise(Id, ?WD_ITEM_ERRORS,
+                              #watchdog_state{id = Id,
+                                              level = ?WD_LEVEL_ERROR,
+                                              src = ?WD_ITEM_ERRORS,
+                                              props = Props});
         false ->
-            elarm:clear(Id, ?WD_ITEM_ERRORS)
+            catch elarm:clear(Id, ?WD_ITEM_ERRORS)
     end,
     {ok, State}.
 

@@ -44,11 +44,13 @@
 -spec(find_by_id(WatchdogId) ->
              ok | not_found when WatchdogId::atom()).
 find_by_id(WatchdogId) ->
-    case elarm:get_alarms() of
+    case catch elarm:get_alarms() of
         {ok, []} ->
             not_found;
         {ok, Items} ->
-            find_by_id_1(Items, WatchdogId, [])
+            find_by_id_1(Items, WatchdogId, []);
+        {_,_Cause} ->
+            not_found
     end.
 
 find_by_id_1([],_WatchdogId, Acc) ->
@@ -82,7 +84,7 @@ find_not_safe_items(ExcludeItems) ->
                             Level::pos_integer(),
                             Items::[{atom(), #watchdog_state{}}]).
 find_not_safe_items(ExcludeItems, Level) ->
-    case elarm:get_alarms() of
+    case catch elarm:get_alarms() of
         {ok, []} ->
             not_found;
         {ok, Items} ->
@@ -112,5 +114,7 @@ find_not_safe_items(ExcludeItems, Level) ->
                     not_found;
                 _ ->
                     {ok, Items_1}
-            end
+            end;
+        {_,_Cause} ->
+            not_found
     end.
