@@ -18,11 +18,11 @@
 %% specific language governing permissions and limitations
 %% under the License.
 %%
-%% @doc Watchdog for Eralng-IO
+%% @doc Watchdog for Application error
 %% @reference
 %% @end
 %%======================================================================
--module(leo_watchdog_io).
+-module(leo_watchdog_error).
 
 -author('Yosuke Hara').
 
@@ -32,7 +32,7 @@
 -include_lib("eunit/include/eunit.hrl").
 
 %% API
--export([start_link/3,
+-export([start_link/2,
          update_property/3,
          stop/0,
          state/0
@@ -44,10 +44,7 @@
          handle_fail/2]).
 
 -record(state, {
-          threshold_input  = 0 :: non_neg_integer(),
-          threshold_output = 0 :: non_neg_integer(),
-          prev_input  = 0 :: non_neg_integer(),
-          prev_output = 0 :: non_neg_integer(),
+          threshold_num_of_errors :: non_neg_integer(),
           interval = timer:seconds(1) :: non_neg_integer()
          }).
 
@@ -56,21 +53,16 @@
 %% API
 %%--------------------------------------------------------------------
 %% @doc Start the server
--spec(start_link(ThresholdInputPerSec, ThresholdOutputPerSec, Interval) ->
+-spec(start_link(ThresholdNumOfErrors, Interval) ->
              {ok,Pid} |
              ignore |
-             {error,Error} when ThresholdInputPerSec::non_neg_integer(),
-                                ThresholdOutputPerSec::non_neg_integer(),
+             {error,Error} when ThresholdNumOfErrors::non_neg_integer(),
                                 Interval::pos_integer(),
                                 Pid::pid(),
                                 Error::{already_started,Pid} | term()).
-start_link(ThresholdInputPerSec, ThresholdOutputPerSec, Interval) ->
-    State = #state{threshold_input    = ThresholdInputPerSec,
-                   threshold_output   = ThresholdOutputPerSec,
-                   prev_input   = ThresholdInputPerSec,
-                   prev_output  = ThresholdOutputPerSec,
-                   interval     = Interval
-                  },
+start_link(ThresholdNumOfErrors, Interval) ->
+    State = #state{threshold_num_of_errors = ThresholdNumOfErrors,
+                   interval = Interval},
     leo_watchdog:start_link(?MODULE, ?MODULE, State, Interval).
 
 
@@ -120,50 +112,24 @@ update_property(_,_, State) ->
              {{error,Error}, State} when Id::atom(),
                                          State::#state{},
                                          Error::any()).
-handle_call(Id, #state{threshold_input   = ThresholdInput,
-                       threshold_output  = ThresholdOutput,
-                       prev_input   = PrevInput,
-                       prev_output  = PrevOutput,
-                       interval     = Interval} = State) ->
-    RetL = tuple_to_list(erlang:statistics(io)),
-    CurInput  = leo_misc:get_value('input',  RetL, 0),
-    CurOutput = leo_misc:get_value('output', RetL, 0),
-    DiffInput  = CurInput  - PrevInput,
-    DiffOutput = CurOutput - PrevOutput,
-    CurTotalIO = DiffInput + DiffOutput,
-    ThresholdIO = erlang:round((ThresholdInput + ThresholdOutput)
-                               * Interval / 1000),
-
-    case (CurTotalIO > ThresholdIO) of
+handle_call(Id, #state{threshold_num_of_errors = ThresholdNumOfErrors} = State) ->
+    {ok, {Count, SetErrors}} = leo_watchdog_collector:pull(),
+    case (Count >= ThresholdNumOfErrors) of
         true ->
-            Props = [{input,  DiffInput},
-                     {output, DiffOutput},
-                     {prev_input,  PrevInput},
-                     {prev_output, PrevOutput},
-                     {cur_input,   CurInput},
-                     {cur_output,  CurOutput}],
+            Props = [{count, Count}, {errors, SetErrors}],
             error_logger:warning_msg("~p,~p,~p,~p~n",
                                      [{module, ?MODULE_STRING},
                                       {function, "handle_call/2"},{line, ?LINE},
                                       {body, [{result, error}] ++ Props}]),
-            catch elarm:raise(Id, ?WD_ITEM_IO,
+            catch elarm:raise(Id, ?WD_ITEM_ERRORS,
                               #watchdog_state{id = Id,
                                               level = ?WD_LEVEL_ERROR,
-                                              src   = ?WD_ITEM_IO,
+                                              src = ?WD_ITEM_ERRORS,
                                               props = Props});
         false ->
-            catch elarm:clear(Id, ?WD_ITEM_IO)
+            catch elarm:clear(Id, ?WD_ITEM_ERRORS)
     end,
-
-    case (CurTotalIO > 0) of
-        true ->
-            {ok, State#state{prev_input  = CurInput,
-                             prev_output = CurOutput}};
-        false ->
-            {ok, State#state{prev_input  = 0,
-                             prev_output = 0}}
-    end.
-
+    {ok, State}.
 
 %% @doc Call execution failed
 -spec(handle_fail(Id, Cause) ->

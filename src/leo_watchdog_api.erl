@@ -72,6 +72,14 @@ start(?WD_TARGET_CLUSTER = Target) ->
         _ ->
             leo_watchdog:resume(leo_watchdog_cluster)
     end;
+start(?WD_TARGET_ERROR = Target) ->
+    ok = application:set_env(leo_watchdog, error_enabled, true),
+    case whereis(leo_watchdog_error) of
+        undefined ->
+            start_1(Target);
+        _ ->
+            leo_watchdog:resume(leo_watchdog_error)
+    end;
 start(_) ->
     {error, invalid_parameter}.
 
@@ -100,7 +108,12 @@ start_1(?WD_TARGET_DISK) ->
 start_1(?WD_TARGET_CLUSTER) ->
     leo_watchdog_sup:start_child(
       cluster, [?env_wd_cluster_check_state_of_members_mfa()],
-      ?env_wd_cluster_interval()).
+      ?env_wd_cluster_interval());
+
+start_1(?WD_TARGET_ERROR) ->
+    leo_watchdog_sup:start_child(
+      error, [?env_wd_error_threshold_count()],
+      ?env_wd_error_interval()).
 
 
 %% @doc Stop the watchdog

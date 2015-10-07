@@ -18,9 +18,6 @@
 %% specific language governing permissions and limitations
 %% under the License.
 %%
-%% -------------------------------------------------------------------
-%% @doc
-%% @end
 %%====================================================================
 -module(leo_watchdog_tests).
 -author('yosuke hara').
@@ -68,11 +65,13 @@ suite_test_() ->
              MaxDiskRKB  = 512 * 1024 * 1024,
              MaxDiskWKB  = 512 * 1024 * 1024,
              MaxRaisedErrorTimes = 5,
+             MaxNumOfErrors = 100,
              ok = leo_watchdog_sup:start_child(rex,     [MaxMemForBin], Interval),
              ok = leo_watchdog_sup:start_child(cpu,     [MaxLoadAvg, MaxCPUUtil], Interval),
              ok = leo_watchdog_sup:start_child(io,      [MaxInput, MaxOutput], Interval),
              ok = leo_watchdog_sup:start_child(disk,    [["/"], [], MaxDiskUse, MaxDiskUtil, MaxDiskRKB, MaxDiskWKB, MaxRaisedErrorTimes], Interval),
              ok = leo_watchdog_sup:start_child(cluster, [{?MODULE, check_cluster_members, []}], Interval),
+             ok = leo_watchdog_sup:start_child(error,   [MaxNumOfErrors], Interval),
 
              ok = leo_watchdog_sup:start_subscriber(
                     'leo_watchdog_sub_io', ['leo_watchdog_io'], ?MODULE),
@@ -82,6 +81,8 @@ suite_test_() ->
                     'leo_watchdog_sub_disk', ['leo_watchdog_disk'], ?MODULE),
              ok = leo_watchdog_sup:start_subscriber(
                     'leo_watchdog_sub_cluster', ['leo_watchdog_cluster'], ?MODULE),
+             ok = leo_watchdog_sup:start_subscriber(
+                    'leo_watchdog_sub_error', ['leo_watchdog_error'], ?MODULE),
              ok
      end,
      fun (_) ->
@@ -95,6 +96,12 @@ suite_test_() ->
 
 
 suite() ->
+    %% Watchdog-errors:
+    [leo_watchdog_collector:push({error, 'async-get'}) || _I <- lists:seq(1, 700)],
+    [leo_watchdog_collector:push({error, 'other_1'}) || _I <- lists:seq(1, 200)],
+    [leo_watchdog_collector:push({error, 'other_2'}) || _I <- lists:seq(1, 100)],
+
+    %% Other watchdog:
     NumOfMsgs = 1000000,
     Pid = spawn(fun() ->
                         loop(NumOfMsgs)

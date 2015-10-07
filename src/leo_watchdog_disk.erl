@@ -180,10 +180,16 @@ get_disk_data({unix, Type}, RetL) when Type =:= linux;
                                        Type =:= freebsd;
                                        Type =:= sunos ->
     F = fun([Filesystem, Blocks, Used, Available, UsePer, MountedOn]) ->
+                ListToIntF = fun(S) ->
+                                     case catch list_to_integer(S) of
+                                         {'EXIT',_} -> 0;
+                                         V -> V
+                                     end
+                             end,
                 #disk_data{filesystem = Filesystem,
-                           blocks    = list_to_integer(Blocks),
-                           used      = list_to_integer(Used),
-                           available = list_to_integer(Available),
+                           blocks = ListToIntF(Blocks),
+                           used = ListToIntF(Used),
+                           available = ListToIntF(Available),
                            use_percentage_str = UsePer,
                            mounted_on = MountedOn}
         end,
@@ -295,19 +301,19 @@ check(Id, [], #state{
               M = leo_misc:get_value(mounted_on, D),
               case L of
                   ?WD_LEVEL_SAFE->
-                      elarm:clear(Id, ?WD_ITEM_DISK_USE);
+                      catch elarm:clear(Id, ?WD_ITEM_DISK_USE);
                   _ ->
                       Props = [{?WD_ITEM_DISK_USE, D},
                                {mounted_on, M}],
                       error_logger:warning_msg("~p,~p,~p,~p~n",
                                                [{module, ?MODULE_STRING},
-                                                {function, "handle_call/2"},{line, ?LINE},
+                                                {function, "check/4"},{line, ?LINE},
                                                 {body, [{result, error}] ++ Props}]),
-                      elarm:raise(Id, ?WD_ITEM_DISK_USE,
-                                  #watchdog_state{id = Id,
-                                                  level = L,
-                                                  src   = M,
-                                                  props = Props})
+                      catch elarm:raise(Id, ?WD_ITEM_DISK_USE,
+                                        #watchdog_state{id = Id,
+                                                        level = L,
+                                                        src   = M,
+                                                        props = Props})
               end
       end, Acc),
 
@@ -381,17 +387,17 @@ disk_stats_1({ok, #disk_stat{util = Util,
                   true ->
                       error_logger:warning_msg("~p,~p,~p,~p~n",
                                                [{module, ?MODULE_STRING},
-                                                {function, "handle_call/2"},{line, ?LINE},
+                                                {function, "disk_stats_1/2"},{line, ?LINE},
                                                 {body, [{result, error}] ++ Props_1}]),
-                      elarm:raise(
-                        Id, ?WD_ITEM_DISK_UTIL,
-                        #watchdog_state{id = Id,
-                                        level = ErrorLevel,
-                                        src   = ?WD_ITEM_DISK_UTIL,
-                                        props = Props_1}),
+                      catch elarm:raise(
+                              Id, ?WD_ITEM_DISK_UTIL,
+                              #watchdog_state{id = Id,
+                                              level = ErrorLevel,
+                                              src   = ?WD_ITEM_DISK_UTIL,
+                                              props = Props_1}),
                       [{?WD_ITEM_DISK_UTIL, ErrorLevel}];
                   false ->
-                      elarm:clear(Id, ?WD_ITEM_DISK_UTIL),
+                      catch elarm:clear(Id, ?WD_ITEM_DISK_UTIL),
                       [{?WD_ITEM_DISK_UTIL, ?WD_LEVEL_SAFE}]
               end,
     Props_2 = [{?WD_ITEM_DISK_RKB, Rkb},
@@ -400,17 +406,17 @@ disk_stats_1({ok, #disk_stat{util = Util,
                   true ->
                       error_logger:warning_msg("~p,~p,~p,~p~n",
                                                [{module, ?MODULE_STRING},
-                                                {function, "handle_call/2"},{line, ?LINE},
+                                                {function, "disk_stats_1/2"},{line, ?LINE},
                                                 {body, [{result, error}] ++ Props_2}]),
-                      elarm:raise(
-                        Id, ?WD_ITEM_DISK_IO,
-                        #watchdog_state{id = Id,
-                                        level = ErrorLevel,
-                                        src   = ?WD_ITEM_DISK_IO,
-                                        props = Props_2}),
+                      catch elarm:raise(
+                              Id, ?WD_ITEM_DISK_IO,
+                              #watchdog_state{id = Id,
+                                              level = ErrorLevel,
+                                              src   = ?WD_ITEM_DISK_IO,
+                                              props = Props_2}),
                       [{?WD_ITEM_DISK_IO, ErrorLevel}|State_1];
                   false ->
-                      elarm:clear(Id, ?WD_ITEM_DISK_IO),
+                      catch elarm:clear(Id, ?WD_ITEM_DISK_IO),
                       [{?WD_ITEM_DISK_IO, ?WD_LEVEL_SAFE}|State_1]
               end,
     DiskStats_2 = lists:zip(

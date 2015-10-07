@@ -124,30 +124,30 @@ handle_call(Id, #state{check_cluster_state_mfa = CheckClusterStateMFA} = State) 
                                              [{module, ?MODULE_STRING},
                                               {function, "handle_call/2"},{line, ?LINE},
                                               {body, [{result, error}] ++ Props}]),
-                    elarm:raise(Id, ?WD_ITEM_CLUSTER,
-                                #watchdog_state{id = Id,
-                                                level = Level,
-                                                src   = ?WD_ITEM_CLUSTER,
-                                                props = Props});
+                    catch elarm:raise(Id, ?WD_ITEM_CLUSTER,
+                                      #watchdog_state{id = Id,
+                                                      level = Level,
+                                                      src   = ?WD_ITEM_CLUSTER,
+                                                      props = Props});
                 {ok, Level} when Level >= ?WD_LEVEL_WARN ->
                     Props = [{level, Level}],
                     error_logger:warning_msg("~p,~p,~p,~p~n",
                                              [{module, ?MODULE_STRING},
                                               {function, "handle_call/2"},{line, ?LINE},
                                               {body, [{result, warn}] ++ Props}]),
-                    elarm:raise(Id, ?WD_ITEM_CLUSTER,
-                                #watchdog_state{id = Id,
-                                                level = Level,
-                                                src   = ?WD_ITEM_CLUSTER,
-                                                props = Props});
+                    catch elarm:raise(Id, ?WD_ITEM_CLUSTER,
+                                      #watchdog_state{id = Id,
+                                                      level = Level,
+                                                      src   = ?WD_ITEM_CLUSTER,
+                                                      props = Props});
                 {ok,_Level} ->
-                    elarm:clear(Id, ?WD_ITEM_CLUSTER);
+                    catch elarm:clear(Id, ?WD_ITEM_CLUSTER);
                 {_, Cause} ->
                     error_logger:error_msg("~p,~p,~p,~p~n",
                                            [{module, ?MODULE_STRING},
                                             {function, "handle_call/2"},
                                             {line, ?LINE}, {body, Cause}]),
-                    elarm:clear(Id, ?WD_ITEM_CLUSTER)
+                    catch elarm:clear(Id, ?WD_ITEM_CLUSTER)
             end
     end,
     {ok, State}.

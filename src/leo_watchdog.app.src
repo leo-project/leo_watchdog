@@ -23,7 +23,7 @@
 {application, leo_watchdog,
  [
   {description, "leo_watchdog keep monitoring applications"},
-  {vsn, "0.10.4"},
+  {vsn, "0.12.0"},
   {mod, {leo_watchdog_app, []}},
   {registered, []},
   {applications, [

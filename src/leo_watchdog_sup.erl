@@ -18,7 +18,7 @@
 %% specific language governing permissions and limitations
 %% under the License.
 %%
-%% @doc leo_watchdog
+%% @doc leo_watchdog_sup
 %% @reference
 %% @end
 %%======================================================================
@@ -123,7 +123,14 @@ child_spec(cluster, Args, Interval) ->
      permanent,
      2000,
      worker,
-     [leo_watchdog_cluster]}.
+     [leo_watchdog_cluster]};
+child_spec(error, Args, Interval) ->
+    {leo_watchdog_error,
+     {leo_watchdog_error, start_link, Args ++ [Interval]},
+     permanent,
+     2000,
+     worker,
+     [leo_watchdog_error]}.
 
 
 %% @doc Creates the gen_server process as part of a supervision tree
@@ -157,4 +164,11 @@ start_subscriber(SubId, FilterSrcL, CallbackMod) ->
 %% @doc supervisor callback - Module:init(Args) -> Result
 %% @end
 init([]) ->
-    {ok, {{one_for_one, 5, 60}, []}}.
+    ChildProcs = [
+                  {leo_watchdog_collector,
+                   {leo_watchdog_collector, start_link, []},
+                   permanent,
+                   timer:seconds(3),
+                   worker,
+                   [leo_watchdog_collector]}],
+    {ok, {{one_for_one, 5, 60}, ChildProcs}}.
