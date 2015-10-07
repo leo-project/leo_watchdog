@@ -107,6 +107,17 @@ start(_Type, _Args) ->
                 false ->
                     void
             end,
+
+            %% Watchdog for Error
+            case ?env_wd_erro_enabled() of
+                true ->
+                    leo_watchdog_sup:start_child(
+                      ?WD_TARGET_ERROR, [?env_wd_error_threshold_count()],
+                      ?env_wd_error_interval());
+                false ->
+                    void
+            end,
+
             {ok, Pid};
         Other ->
             Other
