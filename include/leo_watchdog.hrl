@@ -388,7 +388,7 @@
 %% ERRORS
 %% ---------------------------------------------------------------------
 %% @doc Watchdog - errors - Is enabled
--define(env_wd_erro_enabled(),
+-define(env_wd_error_enabled(),
         case application:get_env(leo_watchdog, error_enabled) of
             {ok, EnvWDErrorEnabled} ->
                 EnvWDErrorEnabled;

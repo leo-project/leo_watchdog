@@ -109,7 +109,7 @@ start(_Type, _Args) ->
             end,
 
             %% Watchdog for Error
-            case ?env_wd_erro_enabled() of
+            case ?env_wd_error_enabled() of
                 true ->
                     leo_watchdog_sup:start_child(
                       ?WD_TARGET_ERROR, [?env_wd_error_threshold_count()],
