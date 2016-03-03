@@ -136,8 +136,17 @@ handle_info(timeout, #state{id = Id,
             SafeTimes_1 =
                 case (MaxSafeTimes =< SafeTimes) of
                     true ->
-                        catch erlang:apply(Mod, handle_notify,
-                                           [Id, [], MaxSafeTimes, leo_date:unixtime()]),
+                        case catch erlang:apply(Mod, handle_notify,
+                                                [Id, [], MaxSafeTimes, leo_date:unixtime()]) of
+                            {'EXIT', Cause} ->
+                                error_logger:error_msg(
+                                  "~p,~p,~p,~p~n",
+                                  [{module, ?MODULE_STRING},
+                                   {function, "handle_info/2"},
+                                   {line, ?LINE}, {body, Cause}]);
+                            _ ->
+                                void
+                        end,
                         1;
                     false ->
                         SafeTimes + 1
@@ -147,8 +156,17 @@ handle_info(timeout, #state{id = Id,
         _ ->
             lists:foreach(
               fun(#watchdog_alarm{} = AItem) ->
-                      catch erlang:apply(Mod, handle_notify,
-                                         [Id, AItem, leo_date:unixtime()]),
+                      case catch erlang:apply(Mod, handle_notify,
+                                              [Id, AItem, leo_date:unixtime()]) of
+                          {'EXIT', Cause} ->
+                              error_logger:error_msg(
+                                "~p,~p,~p,~p~n",
+                                [{module, ?MODULE_STRING},
+                                 {function, "handle_info/2"},
+                                 {line, ?LINE}, {body, Cause}]);
+                          _ ->
+                              void
+                      end,
                       ok;
                  (_) ->
                       ok
