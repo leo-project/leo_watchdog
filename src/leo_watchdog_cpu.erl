@@ -251,7 +251,12 @@ handle_call(Id, #state{threshold_load_avg = ThresholdLoadAvg,
             end,
         {ok, State#state{cur_error_times = CurErrorTimes_1}}
     catch
-        _:_ ->
+        _:Cause ->
+            error_logger:error_msg(
+              "~p,~p,~p,~p~n",
+              [{module, ?MODULE_STRING},
+               {function, "handle_call/2"},
+               {line, ?LINE}, {body, Cause}]),
             {ok, State}
     end.
 
