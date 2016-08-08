@@ -143,10 +143,17 @@ handle_call(Id, #state{threshold_load_avg = ThresholdLoadAvg,
                        raised_error_times = RaisedErrorTimes,
                        cur_error_times    = CurErrorTimes} = State) ->
     try
-        AVG_1 = erlang:round(cpu_sup:avg1() / 256 * 100),
+        AVG_1 = case catch cpu_sup:avg1() of
+                    {'EXIT',_} ->
+                        0.0;
+                    OrgAvg1 ->
+                        erlang:round(OrgAvg1 / 256 * 100)
+                end,
         CPU_Util = case os:type() of
                        {unix, linux} ->
-                           case cpu_sup:util([per_cpu]) of
+                           case catch cpu_sup:util([per_cpu]) of
+                               {'EXIT',_} ->
+                                   0;
                                [] ->
                                    0;
                                Ret_CPUUtil ->
