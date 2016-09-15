@@ -244,7 +244,8 @@ get_target_values_1([Items|Rest], PosOfItems, SoFar) ->
 
 %% @private
 get_item(KeyPos, Values) ->
-    case string:chr(lists:nth(KeyPos, Values), $.) of
+    case string:chr(lists:nth(KeyPos, Values), $.)+
+         string:chr(lists:nth(KeyPos, Values), $,) of
         0 ->
             get_item(integer, KeyPos, Values);
         _ ->
