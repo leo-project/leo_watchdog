@@ -1,4 +1,4 @@
-.PHONY: deps test
+.PHONY: all compile xref eunit check_plt build_plt dialyzer doc callgraph graphviz clean distclean
 
 REBAR := ./rebar
 APPS = erts kernel stdlib sasl crypto compiler inets mnesia public_key runtime_tools snmp syntax_tools tools xmerl webtool ssl
