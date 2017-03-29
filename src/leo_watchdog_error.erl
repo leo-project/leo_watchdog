@@ -117,7 +117,7 @@ handle_call(Id, #state{threshold_num_of_errors = ThresholdNumOfErrors} = State) 
             error_logger:warning_msg("~p,~p,~p,~p~n",
                                      [{module, ?MODULE_STRING},
                                       {function, "handle_call/2"},{line, ?LINE},
-                                      {body, [{result, error}] ++ Props}]),
+                                      {body, [{triggered_watchdog, continuous_error}] ++ Props}]),
             catch elarm:raise(Id, ?WD_ITEM_ERRORS,
                               #watchdog_state{id = Id,
                                               level = ?WD_LEVEL_ERROR,
