@@ -273,6 +273,10 @@ get_target_values_2([Device|Rest], DiskStats, Acc) ->
 
 
 %% @private
+max_value([], #disk_stat{util = Util} = SoFar) when Util > 100 ->
+    SoFar#disk_stat{
+      util = 100
+    };
 max_value([], SoFar) ->
     SoFar;
 max_value([{_, #disk_stat{util = Util,
