@@ -92,9 +92,10 @@ get() ->
 init([OSType, TargetDevices, Interval]) ->
     ?WD_TBL_IOSTAT = ets:new(?WD_TBL_IOSTAT, [named_table, set,
                                               public, {read_concurrency, true}]),
+    erlang:send_after(Interval, self(), trigger),
     {ok, #state{os_type = OSType,
                 devices = TargetDevices,
-                interval = Interval}, Interval}.
+                interval = Interval}}.
 
 
 %% @doc gen_server callback - Module:handle_call(Request, From, State) -> Result
@@ -106,26 +107,25 @@ handle_call(stop, _From, State) ->
 %% <p>
 %% gen_server callback - Module:handle_cast(Request, State) -> Result.
 %% </p>
-handle_cast(_Msg, #state{interval = Interval} = State) ->
-    {noreply, State, Interval}.
+handle_cast(_Msg, #state{interval = _Interval} = State) ->
+    {noreply, State}.
 
 
 %% @doc Handling all non call/cast messages
 %% <p>
 %% gen_server callback - Module:handle_info(Info, State) -> Result.
 %% </p>
-handle_info(timeout, #state{os_type = OSType,
+handle_info(trigger, #state{os_type = OSType,
                             devices = Devices,
                             interval = Interval
                            } = State) ->
-    spawn(fun() ->
-                  Ret = disk_stats(OSType, Devices),
-                  true = ets:insert(?WD_TBL_IOSTAT, {1, Ret})
-          end),
-    {noreply, State, Interval};
+    Ret = disk_stats(OSType, Devices),
+    true = ets:insert(?WD_TBL_IOSTAT, {1, Ret}),
+    erlang:send_after(Interval, self(), trigger),
+    {noreply, State};
 
-handle_info(_, State=#state{interval = Interval}) ->
-    {noreply, State, Interval}.
+handle_info(_, State=#state{interval = _Interval}) ->
+    {noreply, State}.
 
 
 %% @doc This function is called by a gen_server when it is about to

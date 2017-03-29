@@ -94,10 +94,11 @@ stop(Id) ->
 %%--------------------------------------------------------------------
 %% @doc Initiates the server
 init([Id, Filter, MaxSafeTimes, CallbackMod]) ->
+    erlang:send_after(?DEF_TIMEOUT, self(), trigger),
     {ok, #state{id = Id,
                 filter = Filter,
                 callback_mod = CallbackMod,
-                max_safe_times = MaxSafeTimes}, ?DEF_TIMEOUT}.
+                max_safe_times = MaxSafeTimes}}.
 
 
 %% @doc gen_server callback - Module:handle_call(Request, From, State) -> Result
@@ -110,7 +111,7 @@ handle_call(stop, _From, State) ->
 %% gen_server callback - Module:handle_cast(Request, State) -> Result.
 %% </p>
 handle_cast(_Msg, State) ->
-    {noreply, State, ?DEF_TIMEOUT}.
+    {noreply, State}.
 
 
 %% @doc Handling all non call/cast messages
@@ -118,8 +119,8 @@ handle_cast(_Msg, State) ->
 %% gen_server callback - Module:handle_info(Info, State) -> Result.
 %% </p>
 handle_info(_, #state{callback_mod = undefined} = State) ->
-    {noreply, State, ?DEF_TIMEOUT};
-handle_info(timeout, #state{id = Id,
+    {noreply, State};
+handle_info(trigger, #state{id = Id,
                             callback_mod = Mod,
                             filter = Filter,
                             consecutive_safe_times = SafeTimes,
@@ -148,7 +149,8 @@ handle_info(timeout, #state{id = Id,
                     false ->
                         SafeTimes + 1
                 end,
-            {noreply, State#state{consecutive_safe_times = SafeTimes_1}, ?DEF_TIMEOUT};
+            erlang:send_after(?DEF_TIMEOUT, self(), trigger),
+            {noreply, State#state{consecutive_safe_times = SafeTimes_1}};
         %% there are some errors:
         _ ->
             lists:foreach(
@@ -168,10 +170,11 @@ handle_info(timeout, #state{id = Id,
                  (_) ->
                       ok
               end, AlarmL),
-            {noreply, State#state{consecutive_safe_times = 0}, ?DEF_TIMEOUT}
+            erlang:send_after(?DEF_TIMEOUT, self(), trigger),
+            {noreply, State#state{consecutive_safe_times = 0}}
     end;
 handle_info(_, State) ->
-    {noreply, State, ?DEF_TIMEOUT}.
+    {noreply, State}.
 
 
 %% @doc This function is called by a gen_server when it is about to
