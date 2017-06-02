@@ -123,10 +123,11 @@ init([Id, CallbackMod, Props, Interval]) ->
     Id = ets:new(Id, [named_table, set,
                       public, {read_concurrency, true}]),
     ok = CallbackMod:init(Props),
+    erlang:send_after(Interval, self(), timeout),
     {ok, #state{id = Id,
                 callback_mod = CallbackMod,
                 properties = Props,
-                interval = Interval}, Interval}.
+                interval = Interval}}.
 
 %% @doc gen_server callback - Module:handle_call(Request, From, State) -> Result
 handle_call(stop, _From, State) ->
@@ -134,45 +135,46 @@ handle_call(stop, _From, State) ->
 
 %% @doc Modify the interval
 handle_call({set_interval, Interval},_From, State) ->
-    {reply, ok, State#state{interval = Interval}, Interval};
+    erlang:send_after(Interval, self(), timeout),
+    {reply, ok, State#state{interval = Interval}};
 
 %% @doc Update a property
 handle_call({update_property, Item, Value},_From, #state{callback_mod = CallbackMod,
-                                                properties = Props,
-                                                interval = Interval} = State) ->
+                                                properties = Props} = State) ->
     Props_1 = erlang:apply(CallbackMod, update_property, [Item, Value, Props]),
-    {reply, ok, State#state{properties = Props_1}, Interval};
+    {reply, ok, State#state{properties = Props_1}};
 
 %% @doc Suspend the server
 handle_call(suspend,_From, State) ->
     {reply, ok, State#state{is_suspending = true}};
 
 %% @doc Resume the server
-handle_call(resume,_From, #state{interval = Interval,
-                                 is_suspending = false} = State) ->
-    {reply, ok, State, Interval};
-handle_call(resume,_From, #state{interval = Interval} = State) ->
-    {reply, ok, State#state{is_suspending = false}, Interval};
+handle_call(resume,_From, #state{is_suspending = false} = State) ->
+    {reply, ok, State};
+handle_call(resume,_From, State) ->
+    {reply, ok, State#state{is_suspending = false}};
 
 %% @doc Retrieve the state
-handle_call(state,_From, #state{interval = Interval} = State) ->
+handle_call(state,_From, State) ->
     State_1 = lists:zip(record_info(fields, state),tl(tuple_to_list(State))),
-    {reply, {ok, State_1}, State, Interval}.
+    {reply, {ok, State_1}, State}.
 
 
 %% @doc Handling cast message
 %% <p>
 %% gen_server callback - Module:handle_cast(Request, State) -> Result.
 %% </p>
-handle_cast(_Msg, #state{interval = Interval} = State) ->
-    {noreply, State, Interval}.
+handle_cast(_Msg, State) ->
+    {noreply, State}.
 
 
 %% @doc Handling all non call/cast messages
 %% <p>
 %% gen_server callback - Module:handle_info(Info, State) -> Result.
 %% </p>
-handle_info(timeout, #state{is_suspending = true} = State) ->
+handle_info(timeout, #state{interval = Interval,
+                            is_suspending = true} = State) ->
+    erlang:send_after(Interval, self(), timeout),
     {noreply, State};
 handle_info(timeout, #state{id = Id,
                             callback_mod = CallbackMod,
@@ -202,10 +204,11 @@ handle_info(timeout, #state{id = Id,
                       catch ets:insert(Id, NewProps),
                       NewProps
               end,
-    {noreply, State#state{properties = Props_1}, Interval};
+    erlang:send_after(Interval, self(), timeout),
+    {noreply, State#state{properties = Props_1}};
 
-handle_info(_, State=#state{interval = Interval}) ->
-    {noreply, State, Interval}.
+handle_info(_, State) ->
+    {noreply, State}.
 
 
 %% @doc This function is called by a gen_server when it is about to
