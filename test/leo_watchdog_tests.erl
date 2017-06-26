@@ -150,7 +150,7 @@ send_message(NumOfMsgs, Pid) ->
                 true  -> MinLen;
                 false -> Len_1
             end,
-    Msg = crypto:rand_bytes(Len_2),
+    Msg = crypto:strong_rand_bytes(Len_2),
     erlang:send(Pid, {put, Msg}),
     send_message(NumOfMsgs - 1, Pid).
 
