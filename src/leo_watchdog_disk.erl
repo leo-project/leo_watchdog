@@ -287,7 +287,7 @@ handle_fail(_Id,_Cause) ->
 %%--------------------------------------------------------------------
 %% @doc Check disk-related items
 %% @private
-check(Id, [], #state{
+check(_Id, [], #state{
                  raised_error_times = RaisedErrorTimes,
                  cur_error_times    = CurErrorTimes} = State, Acc) ->
     %% Summarize result of disk use%
@@ -298,19 +298,14 @@ check(Id, [], #state{
               M = leo_misc:get_value(mounted_on, D),
               case L of
                   ?WD_LEVEL_SAFE->
-                      catch elarm:clear(Id, ?WD_ITEM_DISK_USE);
+                      nop;
                   _ ->
                       Props = [{?WD_ITEM_DISK_USE, D},
                                {mounted_on, M}],
                       error_logger:warning_msg("~p,~p,~p,~p~n",
                                                [{module, ?MODULE_STRING},
                                                 {function, "check/4"},{line, ?LINE},
-                                                {body, [{triggered_watchdog, disk_usage}] ++ Props}]),
-                      catch elarm:raise(Id, ?WD_ITEM_DISK_USE,
-                                        #watchdog_state{id = Id,
-                                                        level = L,
-                                                        src   = M,
-                                                        props = Props})
+                                                {body, [{triggered_watchdog, disk_usage}] ++ Props}])
               end
       end, Acc),
 
