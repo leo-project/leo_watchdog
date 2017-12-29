@@ -56,7 +56,7 @@ stop() ->
 stop_1([]) ->
     ok;
 stop_1([{NamedProc,_Pid,worker,_}|Rest]) ->
-    _ = leo_watchdog:stop(NamedProc),
+    supervisor:terminate_child(?MODULE, NamedProc),
     stop_1(Rest).
 
 
