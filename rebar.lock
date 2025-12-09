@@ -1,0 +1,8 @@
+[{<<"elarm">>,
+  {git,"https://github.com/esl/elarm.git",
+       {ref,"5885c906cb7c248f233b90b83f6b910b7b1d293b"}},
+  0},
+ {<<"leo_commons">>,
+  {git,"https://github.com/leo-project/leo_commons.git",
+       {ref,"14e747221e774332c555531ed0a4d5f499919236"}},
+  0}].
