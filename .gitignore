@@ -11,3 +11,4 @@ rel/example_project
 .leo_watchdog_dialyzer_plt
 leo_watchdog.dot
 leo_watchdog.png
+_build/
